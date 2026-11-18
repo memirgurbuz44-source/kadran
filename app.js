@@ -208,20 +208,52 @@ $("reset").onclick=()=>commitConfig({...defaults});
 $("sample").onclick=()=>{config={...defaults,name:"MIDNIGHT GT",accent:"#ff3b62",secondary:"#a78bfa",maxSpeed:320,maxRpm:9000,speed:126,rpm:4.8,layout:"single-dial",gaugeStyle:"solid"};json();render();};
 
 $("fixYoldasErrors").onclick=async()=>{
+ const button=$("fixYoldasErrors");
+ button.disabled=true;
+ button.textContent="↻ HATALAR AI TARAFINDAN DÜZELTİLİYOR...";
  try{
   const copied=await navigator.clipboard.readText();
-  if(!copied.trim())throw new Error("Panoda hata metni bulunamadı. Önce Yoldaş'ta 'Hataları yapay zekâya kopyala' düğmesine bas.");
+  if(!copied.trim())throw new Error("Önce Yoldaş Atölyesi'nde 'Hataları yapay zekâya kopyala' düğmesine bas.");
+  if(!selectedImage)throw new Error("AI'nın tasarımı yeniden düzenleyebilmesi için aynı kadran görselini bu sayfaya tekrar yükle.");
+  const currentDial=window.__lastYoldasDial||makeYoldasCode(config);
+  const form=new FormData();
+  form.append("image",selectedImage);
+  form.append("prompt",
+   "BU BİR HATA DÜZELTME GÖREVİDİR. Yeni tasarım uydurma. Önceki tasarım JSON'unu ve Yoldaş Atölyesi'nin GERÇEK hata mesajlarını incele. Hataların her birini gider. Yalnızca desteklenen config alanlarını döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. Renkler #RRGGBB olsun.\n"+
+   "YOLDAŞ HATA MESAJLARI:\n"+copied+"\n\nMEVCUT TASARIM JSON:\n"+JSON.stringify(currentDial)+"\n\nKullanıcının ilk isteği: "+$("prompt").value.trim()
+  );
+  $("jsonStatus").textContent="YOLDAŞ HATALARI AI'YA GÖNDERİLİYOR...";
+  $("jsonStatus").style.color="#20c9ff";
+  const controller=new AbortController();
+  const timeoutId=setTimeout(()=>controller.abort(),90000);
+  let response;
+  try{
+   response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form,signal:controller.signal});
+  }catch(err){
+   if(err.name==="AbortError")throw new Error("AI 90 saniye içinde yanıt vermedi.");
+   throw new Error("AI sunucusuna bağlanılamadı: "+err.message);
+  }finally{clearTimeout(timeoutId);}
+  const raw=await response.text();
+  let data;
+  try{data=parseJsonWithControlRepair(raw);}catch(err){throw new Error("AI yanıtı okunamadı: "+err.message);}
+  if(!response.ok||!data.success)throw new Error(data.detail||data.error||("AI isteği başarısız (HTTP "+response.status+")."));
+  if(!data.config||typeof data.config!=="object")throw new Error("AI düzeltilmiş tasarım döndürmedi.");
+  config={...defaults,...data.config};
+  render();json();
   const checked=validateAndRepairYoldas(makeYoldasCode(config));
   const finalJson=JSON.stringify(checked.doc,null,2);
   await navigator.clipboard.writeText(finalJson);
-  $("jsonStatus").textContent="✓ YOLDAŞ HATALARI ALINDI · JSON DÜZELTİLDİ VE KOPYALANDI";
+  window.__lastYoldasDial=checked.doc;
+  $("jsonStatus").textContent="✓ AI HATALARI DÜZELTTİ · "+checked.passes+" ŞEMA KONTROL TURU · JSON KOPYALANDI";
   $("jsonStatus").style.color="#39d99b";
-  $("prompt").value=($("prompt").value.trim()+"\n\nYOLDAŞ ATÖLYESİNDEN KOPYALANAN HATALAR:\n"+copied).trim();
-  if(checked.history.length)$("jsonStatus").textContent+=" · "+checked.history.length+" TUR";
+  $("prompt").value=$("prompt").value.trim()+"\n\nSon Yoldaş hata raporu:\n"+copied;
  }catch(e){
-  $("jsonStatus").textContent="HATA: "+e.message;
+  $("jsonStatus").textContent="DÜZELTME BAŞARISIZ: "+e.message;
   $("jsonStatus").style.color="#ff7474";
   alert(e.message);
+ }finally{
+  button.disabled=false;
+  button.textContent="↻ YOLDAŞ HATALARINI AL VE DÜZELT";
  }
 };
 
