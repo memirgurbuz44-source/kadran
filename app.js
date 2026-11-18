@@ -74,7 +74,7 @@ function makeYoldasCode(c){
   {type:"gears",x:880,y:555,width:160,size:34,active_size:40,color:light?"#687589":"#78879B",active_color:accent},
   {type:"signal",side:"left",x:360,y:315,size:44,color:"$signal"},
   {type:"signal",side:"right",x:1516,y:315,size:44,color:"$signal"},
-  {type:"text",text:"DRIVE  •  "+String(c.subtitle||"READY").slice(0,16),x:960,y:635,align:"center",size:24,weight:600,fill:light?"#526176":"#AAB8CC"}
+  {type:"text",text:("DRIVE  •  "+String(c.subtitle||"READY")).slice(0,24),x:960,y:635,align:"center",size:24,weight:600,fill:light?"#526176":"#AAB8CC"}
  ];
  return {yoldas_dial:1,name:String(c.name||"Yoldas Tasarimi").slice(0,40),description:"Kadran AI Studio tarafindan olusturuldu.",background:{night,day},parts};
 }
