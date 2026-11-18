@@ -135,13 +135,19 @@ $("generate").onclick=async()=>{
  button.disabled=true;button.textContent="✳ AI TASARIMI HAZIRLIYOR...";
  $("jsonStatus").textContent="GÖRSEL AI'YA GÖNDERİLİYOR...";
  $("jsonStatus").style.color="#20c9ff";
- let yoldasTab=window.open("about:blank","_blank");
+ let yoldasTab=window.open("https://yoldas.io/kadran-atolyesi","_blank");
  try{
   const form=new FormData();
   form.append("image",selectedImage);
   const visionBrief="REFERANS GORSELINI ANA KAYNAK OLARAK KULLAN. Fotoğraftaki gösterge panelinin geniş oval formunu, ortadaki büyük dijital hız ekranını, soldaki devir göstergesini, sağdaki yakıt seviyesini, üstteki iki sinyal okunu ve READY yazısını ayrı ayrı analiz et. Tasarımı sıradan iki yuvarlak spor göstergeye dönüştürme. Simetriyi, koyu füme cam yüzeyi, siyah dış çerçeveyi, mor-mavi çevresel ışığı ve sarı/yeşil/kırmızı gösterge segmentlerini koru. Çıktı config alanlarında görseldeki ana vurgu rengini accent, ikincil soğuk neon rengini secondary, tahmini hız ve devir üst sınırlarını maxSpeed ve maxRpm olarak belirt. İsim kısa olsun. Görselde olmayan dekoratif öğeler uydurma. Kullanıcı isteği: ";
   form.append("prompt",visionBrief+$("prompt").value.trim());
-  const response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form});
+  $("jsonStatus").textContent="AI GÖRSELİ İNCELİYOR...";
+  const controller=new AbortController();
+  const timeoutId=setTimeout(()=>controller.abort(),90000);
+  let response;
+  try{response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form,signal:controller.signal});}
+  catch(fetchError){if(fetchError.name==="AbortError")throw new Error("AI sunucusu 90 saniye içinde yanıt vermedi. Worker kontrol edilmeli.");throw new Error("AI sunucusuna bağlanılamadı: "+fetchError.message);}
+  finally{clearTimeout(timeoutId);}
   const rawResponse=await response.text();
   let data;
   try{data=parseJsonWithControlRepair(rawResponse);}catch(parseError){
@@ -162,7 +168,6 @@ $("generate").onclick=async()=>{
   if(yoldasTab){yoldasTab.location.href="https://yoldas.io/kadran-atolyesi#kadran-ai="+encodeURIComponent(yoldasCode);yoldasTab.focus();}
   else{$("jsonStatus").textContent+=" · YOLDAŞ SEKME AÇILAMADI (POPUP ENGELİ)";}
  }catch(error){
-  if(yoldasTab&&!yoldasTab.closed)yoldasTab.close();
   $("jsonStatus").textContent="AI HATASI: "+error.message;
   $("jsonStatus").style.color="#ff7474";
   alert("AI tasarımı oluşturulamadı:\n"+error.message);
