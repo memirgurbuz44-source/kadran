@@ -60,8 +60,8 @@ function makeYoldasCode(c){
  const textPaint={night:"#F4F7FB",day:"#172033"};
  const dimPaint={night:"#AAB8CC",day:"#526176"};
  const trackPaint={night:"#263448",day:"#D5DDE8"};
- const title=String(c.name||"YOLDAS DIGITAL").replace(/[\\r\\n]/g," ").slice(0,24);
- const subtitle=String(c.subtitle||"READY").replace(/[\\r\\n]/g," ").slice(0,18);
+ const title=String(c.name||"YOLDAS DIGITAL").replaceAll(String.fromCharCode(10)," ").replaceAll(String.fromCharCode(13)," ").slice(0,24);
+ const subtitle=String(c.subtitle||"READY").replaceAll(String.fromCharCode(10)," ").replaceAll(String.fromCharCode(13)," ").slice(0,18);
  const parts=[
   {type:"rect",x:0,y:0,width:1920,height:12,fill:accent,opacity:0.9},
   {type:"arc",center:[960,360],radius:300,start:-135,sweep:270,stroke:{paint:accent,width:5,cap:"round"},opacity:0.35},
@@ -80,7 +80,7 @@ function makeYoldasCode(c){
   {type:"signal",side:"right",x:1218,y:260,size:52,color:"$signal"},
   {type:"text",text:subtitle,x:960,y:640,align:"center",size:22,weight:600,spacing:0.12,fill:dimPaint}
  ];
- return {yoldas_dial:1,name:String(c.name||"Yoldas Tasarimi").replace(/[\\r\\n]/g," ").slice(0,40),description:"Kadran AI Studio tarafindan olusturuldu.",background:{night,day},parts};
+ return {yoldas_dial:1,name:String(c.name||"Yoldas Tasarimi").replaceAll(String.fromCharCode(10)," ").replaceAll(String.fromCharCode(13)," ").slice(0,40),description:"Kadran AI Studio tarafindan olusturuldu.",background:{night,day},parts};
 }
 function download(){try{applyEditor();const blob=new Blob([JSON.stringify(config,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(config.name||"kadran").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".json";a.click();URL.revokeObjectURL(a.href);}catch{}}
 $("downloadTop").onclick=download;
