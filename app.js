@@ -297,9 +297,9 @@ $("generate").onclick=async()=>{
   $("jsonEditor").value=JSON.stringify(config,null,2);
   try{
    await navigator.clipboard.writeText(yoldasCode);
-   $("jsonStatus").textContent="✓ YOLDAŞ KONTROLÜ TAMAM · "+checked.passes+" DÜZELTME TURU · CTRL+V";
+   $("jsonStatus").textContent="✓ İLK ŞEMA KONTROLÜ TAMAM · GERÇEK YOLDAŞ TESTİ BEKLENİYOR · "+checked.passes+" TUR · CTRL+V";
   }catch{
-   $("jsonStatus").textContent="✓ YOLDAŞ KONTROLÜ TAMAM · JSON İNDİR DÜĞMESİNİ KULLAN";
+   $("jsonStatus").textContent="✓ İLK ŞEMA KONTROLÜ TAMAM · GERÇEK YOLDAŞ TESTİ BEKLENİYOR · JSON İNDİR";
   }
   $("jsonStatus").style.color="#39d99b";
   
