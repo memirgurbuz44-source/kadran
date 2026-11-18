@@ -261,11 +261,13 @@ $("fixYoldasErrors").onclick=async()=>{
 
 $("generate").onclick=async()=>{
  const button=$("generate");
- if(!selectedImage){alert("Önce sol taraftan bir kadran fotoğrafı yükle.");return;}
+ window.__kadranGenerationReady=false;
+ window.__kadranGenerationError="";
+ if(!selectedImage){window.__kadranGenerationError="Önce sol taraftan bir kadran fotoğrafı yükle.";alert(window.__kadranGenerationError);return;}
  button.disabled=true;button.textContent="✳ AI TASARIMI HAZIRLIYOR...";
  $("jsonStatus").textContent="GÖRSEL AI'YA GÖNDERİLİYOR...";
  $("jsonStatus").style.color="#20c9ff";
- let yoldasTab=window.open("about:blank","_blank");
+ 
  try{
   const form=new FormData();
   form.append("image",selectedImage);
@@ -303,6 +305,8 @@ $("generate").onclick=async()=>{
   if(yoldasTab && !yoldasTab.closed){yoldasTab.location.href="atolye.html";yoldasTab.focus();}
   window.__lastYoldasDial=checked.doc;
  }catch(error){
+  window.__kadranGenerationReady=false;
+  window.__kadranGenerationError=error.message;
   $("jsonStatus").textContent="AI HATASI: "+error.message;
   $("jsonStatus").style.color="#ff7474";
   alert("AI tasarımı oluşturulamadı:\n"+error.message);
