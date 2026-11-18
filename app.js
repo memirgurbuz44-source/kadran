@@ -302,8 +302,10 @@ $("generate").onclick=async()=>{
    $("jsonStatus").textContent="✓ YOLDAŞ KONTROLÜ TAMAM · JSON İNDİR DÜĞMESİNİ KULLAN";
   }
   $("jsonStatus").style.color="#39d99b";
-  if(yoldasTab && !yoldasTab.closed){yoldasTab.location.href="atolye.html";yoldasTab.focus();}
+  
   window.__lastYoldasDial=checked.doc;
+   window.__kadranGenerationReady=true;
+   window.__kadranGenerationError="";
  }catch(error){
   window.__kadranGenerationReady=false;
   window.__kadranGenerationError=error.message;
