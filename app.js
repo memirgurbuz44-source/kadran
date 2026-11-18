@@ -4,7 +4,7 @@ let config={...defaults};
 let selectedImage=null;
 function json(){$("jsonEditor").value=JSON.stringify(config,null,2);$("jsonStatus").textContent="JSON HAZIR";}
 function parseJsonWithControlRepair(raw){
- const clean=String(raw??"").replace(/^\\uFEFF/,"").trim();
+ const clean=String(raw??"").replace(/^\uFEFF/,"").trim();
  try{return JSON.parse(clean);}catch(firstError){
   let out="",inString=false,escaped=false;
   for(let i=0;i<clean.length;i++){
@@ -14,10 +14,10 @@ function parseJsonWithControlRepair(raw){
     if(ch==="\\"){out+=ch;escaped=true;continue;}
     if(ch==='"'){out+=ch;inString=false;continue;}
     if(code<0x20){
-     if(ch==="\\n")out+="\\\\n";
-     else if(ch==="\\r")out+="\\\\r";
-     else if(ch==="\\t")out+="\\\\t";
-     else out+="\\\\u"+code.toString(16).padStart(4,"0");
+     if(ch==="\n")out+="\\n";
+     else if(ch==="\r")out+="\\r";
+     else if(ch==="\t")out+="\\t";
+     else out+="\\u"+code.toString(16).padStart(4,"0");
      continue;
     }
     out+=ch;
@@ -27,7 +27,7 @@ function parseJsonWithControlRepair(raw){
    }
   }
   try{return JSON.parse(out);}catch(secondError){
-   const pos=Number(firstError.message.match(/position (\\d+)/)?.[1]||0);
+   const pos=Number(firstError.message.match(/position (\d+)/)?.[1]||0);
    const excerpt=clean.slice(Math.max(0,pos-100),Math.min(clean.length,pos+180));
    throw new Error("AI yanıtı bozuk JSON içeriyor. "+firstError.message+" Yanıt parçası: "+excerpt);
   }
