@@ -302,43 +302,24 @@ async function askKadranAI(imageFile,promptText){
 }
 $("generate").onclick=async()=>{
  const button=$("generate");
- window.__kadranGenerationReady=false;window.__kadranGenerationError="";
- if(!selectedImage){window.__kadranGenerationError="Önce bir kadran görseli yükle.";alert(window.__kadranGenerationError);return;}
- button.disabled=true;
- const originalPrompt=$("prompt").value.trim();
+ if(!selectedImage){alert("Önce bir kadran görseli yükle.");return;}
+ button.disabled=true;button.textContent="AI TASARIMI HAZIRLIYOR...";
  try{
-  let nextConfig;
+  const originalPrompt=$("prompt").value.trim();
   $("jsonStatus").textContent="AI GÖRSELİ ANALİZ EDİYOR...";
   const visionPrompt="Yüklenen kadran referansını analiz et ve yalnızca şu config alanlarını döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. layout: dual-dial/single-dial/horizontal/minimal. gaugeStyle: neon/solid/minimal. Renkler #RRGGBB. maxSpeed 80-400, maxRpm 3000-12000. Görselde olmayan öğeler uydurma. Türkçe kullanıcı isteği: "+originalPrompt;
-  nextConfig=await askKadranAI(selectedImage,visionPrompt);
-  let finalDial=null,errors=[];
-  for(let attempt=1;attempt<=6;attempt++){
-   config={...defaults,...nextConfig};
-   finalDial=makeYoldasCode(config);
-   errors=validateOwnAtelier(finalDial);
-   if(!errors.length)break;
-   $("jsonStatus").textContent="ATÖLYE DENETİMİ: "+errors.length+" HATA · AI DÜZELTME "+attempt+"/6";
-   const repairPrompt="Bu tasarımı yeni baştan yapma. Aşağıdaki mevcut config'i ve Yoldaş kadran JSON'unu, bizim Kadran Atölyesi doğrulama raporundaki hataları giderecek şekilde düzelt. Yalnızca desteklenen config alanlarını döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. JSON dışında açıklama verme. İlk kullanıcı isteğini ve görsel tasarımın görünüşünü koru.\\n\\nİLK İSTEK:\\n"+originalPrompt+"\\n\\nHATA RAPORU:\\n"+errors.join("\\n")+"\\n\\nMEVCUT CONFIG:\\n"+JSON.stringify(config)+"\\n\\nOLUŞAN YOLDAŞ JSON:\\n"+JSON.stringify(finalDial);
-   nextConfig=await askKadranAI(selectedImage,repairPrompt);
-  }
-  config={...defaults,...nextConfig};
-  finalDial=makeYoldasCode(config);
-  errors=validateOwnAtelier(finalDial);
-  if(errors.length)throw new Error("6 otomatik düzeltme turundan sonra kalan hatalar: "+errors.join(" | "));
-  const finalJson=JSON.stringify(finalDial,null,2);
-  localStorage.setItem("kadran_atolye_json",finalJson);
-  localStorage.setItem("kadran_atolye_source","kadran-ai");
-  localStorage.setItem("kadran_atolye_name",config.name||"AI Kadran");
-  json();render();
-  $("jsonStatus").textContent="✓ TASARIM HATASIZ · KADRAN ATÖLYESİ AÇILIYOR";
-  $("jsonStatus").style.color="#39d99b";
-  window.__lastYoldasDial=finalDial;window.__kadranGenerationReady=true;window.__kadranGenerationError="";
-  setTimeout(()=>{window.location.href="atolye.html";},350);
- }catch(error){
-  window.__kadranGenerationReady=false;window.__kadranGenerationError=error.message;
-  $("jsonStatus").textContent="AI / ATÖLYE HATASI: "+error.message;$("jsonStatus").style.color="#ff7474";
-  alert("Tasarım tamamlanamadı:\n"+error.message);
- }finally{button.disabled=false;button.textContent="✳ TASARIMI AI İLE OLUŞTUR";}
+  const initialConfig=await askKadranAI(selectedImage,visionPrompt);
+  const canvas=document.createElement("canvas"),img=new Image(),imageUrl=URL.createObjectURL(selectedImage);
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error("Görsel hazırlanamadı."));img.src=imageUrl;});
+  const scale=Math.min(1,1280/Math.max(img.naturalWidth,img.naturalHeight));
+  canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(imageUrl);
+  const imageData=canvas.toDataURL("image/jpeg",0.78);
+  localStorage.setItem("kadran_atolye_ai_job",JSON.stringify({prompt:originalPrompt,config:initialConfig,image:imageData,createdAt:Date.now()}));
+  $("jsonStatus").textContent="✓ TASARIM HAZIR · ATÖLYE AÇILIYOR";
+  window.location.href="atolye.html?ai=1";
+ }catch(error){$("jsonStatus").textContent="AI HATASI: "+error.message;alert("Tasarım başlatılamadı: "+error.message);}
+ finally{button.disabled=false;button.textContent="✳ TASARIMI AI İLE OLUŞTUR";}
 };
 $("imageInput").onchange=e=>showImage(e.target.files[0]);
 function showImage(file){if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){alert("Lütfen PNG, JPG veya WEBP görsel seç.");return;}if(file.size>5*1024*1024){alert("Görsel en fazla 5 MB olabilir.");return;}selectedImage=file;const url=URL.createObjectURL(file);$("referencePreview").innerHTML='<img src="'+url+'" alt="Yüklenen kadran referansı">';}
