@@ -117,7 +117,7 @@ function makeYoldasCode(c){
   {type:"text",value:"speed",x:960,y:330,align:"center",size:190,weight:500,font:"tech",fill:textColor},
   {type:"text",unit_of:"speed",uppercase:true,x:960,y:452,align:"center",size:22,weight:700,spacing:0.2,fill:accent},
   {type:"gears",x:860,y:520,width:200,size:26,active_size:36,active_weight:700,color:dimColor,active_color:accent},
-  {type:"ring",center:[390,350],radius:105,width:12,start:-135,sweep:270,value:"battery",from:[0,100],color:{value:"battery",steps:[[20,"$warning"]],color:accent},track:track},
+  {type:"ring",center:[390,350],radius:105,width:12,start:-135,sweep:270,value:"battery",from:[0,100],color:accent,track:track},
   {type:"text",value:"battery",x:390,y:350,align:"center",size:46,weight:400,font:"tech",fill:textColor},
   {type:"text",word:"battery",x:390,y:475,align:"center",size:17,weight:600,spacing:0.16,fill:dimColor},
   {type:"ring",center:[1530,350],radius:105,width:12,start:-135,sweep:270,value:"range",from:[0,600],color:secondary,track:track},
@@ -153,6 +153,7 @@ function validateYoldasDial(doc){
    if(!p||typeof p!=="object"||!YOLDAS_PART_TYPES.has(p.type))errors.push("parts["+i+"]: desteklenmeyen parça türü.");
    if(p&&p.type==="text"&&p.value==="speed"&&!(Number(p.size)>=120))errors.push("Hız yazısı en az 120 boyutunda olmalı.");
    if(p&&p.type==="gears"&&!(Number(p.size)>=22))errors.push("Vites yazısı en az 22 boyutunda olmalı.");
+   if(p&&p.type==="ring"&&p.color&&typeof p.color==="object")errors.push("parts["+i+"].color nesne olamaz; düz renk değeri olmalı.");
   });
  }
  try{if(new Blob([JSON.stringify(doc)]).size>256*1024)errors.push("JSON dosyası 256 KB sınırını aşıyor.");}catch{errors.push("JSON serileştirilemiyor.");}
@@ -166,6 +167,7 @@ function repairYoldasDial(doc){
  fixed.background={night:fixed.background?.night||"#05070B",day:fixed.background?.day||"#EEF1F4"};
  if(!Array.isArray(fixed.parts))fixed.parts=[];
  fixed.parts=fixed.parts.filter(p=>p&&typeof p==="object"&&YOLDAS_PART_TYPES.has(p.type)).slice(0,400);
+ fixed.parts.forEach(p=>{if(p.type==="ring"&&p.color&&typeof p.color==="object")p.color="#20C9FF";});
  let speed=fixed.parts.find(p=>p.type==="text"&&p.value==="speed");
  if(!speed){speed={type:"text",value:"speed",x:960,y:350,align:"center",size:190,weight:500,font:"tech",fill:"#F4F7FA"};fixed.parts.push(speed);}
  speed.size=Math.max(120,Number(speed.size)||190);
@@ -204,6 +206,25 @@ $("copyJson").onclick=async()=>{try{await navigator.clipboard.writeText($("jsonE
 $("formatJson").onclick=()=>{try{$("jsonEditor").value=JSON.stringify(JSON.parse($("jsonEditor").value),null,2);applyEditor();}catch{$("jsonStatus").textContent="JSON HATASI";}};
 $("reset").onclick=()=>commitConfig({...defaults});
 $("sample").onclick=()=>{config={...defaults,name:"MIDNIGHT GT",accent:"#ff3b62",secondary:"#a78bfa",maxSpeed:320,maxRpm:9000,speed:126,rpm:4.8,layout:"single-dial",gaugeStyle:"solid"};json();render();};
+
+$("fixYoldasErrors").onclick=async()=>{
+ try{
+  const copied=await navigator.clipboard.readText();
+  if(!copied.trim())throw new Error("Panoda hata metni bulunamadı. Önce Yoldaş'ta 'Hataları yapay zekâya kopyala' düğmesine bas.");
+  const checked=validateAndRepairYoldas(makeYoldasCode(config));
+  const finalJson=JSON.stringify(checked.doc,null,2);
+  await navigator.clipboard.writeText(finalJson);
+  $("jsonStatus").textContent="✓ YOLDAŞ HATALARI ALINDI · JSON DÜZELTİLDİ VE KOPYALANDI";
+  $("jsonStatus").style.color="#39d99b";
+  $("prompt").value=($("prompt").value.trim()+"\n\nYOLDAŞ ATÖLYESİNDEN KOPYALANAN HATALAR:\n"+copied).trim();
+  if(checked.history.length)$("jsonStatus").textContent+=" · "+checked.history.length+" TUR";
+ }catch(e){
+  $("jsonStatus").textContent="HATA: "+e.message;
+  $("jsonStatus").style.color="#ff7474";
+  alert(e.message);
+ }
+};
+
 $("generate").onclick=async()=>{
  const button=$("generate");
  if(!selectedImage){alert("Önce sol taraftan bir kadran fotoğrafı yükle.");return;}
