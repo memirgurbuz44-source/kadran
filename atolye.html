@@ -108,6 +108,72 @@ document.querySelectorAll("[data-state]").forEach(b=>b.onclick=()=>{driveState=b
 $("warnings").onchange=render;$("windows").onchange=render;
 $("photo").onchange=e=>{const f=e.target.files?.[0];if(!f)return;if(photoUrl)URL.revokeObjectURL(photoUrl);photoUrl=URL.createObjectURL(f);$("photoPreview").src=photoUrl;$("photoPreview").hidden=false;render()};
 document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{const kind=b.dataset.preset;if(kind==="simple")doc=structuredClone(sample);if(kind==="classic")doc=structuredClone(sample),doc.name="KLASİK İBRELİ",doc.parts.unshift({type:"circle",center:[620,355],radius:210,fill:"#0B0D10",stroke:{paint:"#8995A2",width:3}},{type:"scale",shape:"arc",center:[620,355],radius:195,start:-135,sweep:270,range:[0,200],major:50,minor:10,width:3,color:"#F2F4F7",numbers:{size:25,offset:35,color:"#F2F4F7"}});if(kind==="sport")doc=structuredClone(sample),doc.name="SPORT RED",doc.background={night:"#070707",day:"#F2F2F2"},doc.parts[2].stroke.paint="#FF3B30",doc.parts[7].fill="#FF3B30";if(kind==="battery")doc=structuredClone(sample),doc.name="BATARYA ODAKLI",doc.parts[9].radius=145; $("json").value=JSON.stringify(doc,null,2);render();showReport()});
+
+function aiMakeDial(c){
+ const accent=typeof c.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.accent)?c.accent:"#20C9FF";
+ const secondary=typeof c.secondary==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.secondary)?c.secondary:"#8B5CF6";
+ const title=String(c.name||"DIGITAL COCKPIT").replace(/[\r\n]+/g," ").slice(0,40);
+ const textColor={night:"#F4F7FA",day:"#17212B"},dimColor={night:"#AAB6C2",day:"#526170"},track={night:"#FFFFFF24",day:"#10151C20"};
+ const speedMax=Math.min(400,Math.max(80,Number(c.maxSpeed)||240));
+ const parts=[
+ {type:"circle",center:[960,350],radius:315,fill:{radial:{center:[960,350],radius:315,stops:[[0,accent+"18"],[1,"#05070B00"]]}},stroke:{paint:accent+"55",width:3}},
+ {type:"arc",center:[960,350],radius:275,start:-135,sweep:270,stroke:{paint:track,width:14,cap:"round"}},
+ {type:"arc",center:[960,350],radius:275,start:-135,sweep:270,stroke:{paint:accent,width:5,cap:"round"},glow:{color:accent,size:12,strength:0.35}},
+ {type:"text",text:title,x:960,y:92,align:"center",size:24,weight:700,spacing:0.16,fill:dimColor},
+ {type:"signal",side:"left",x:650,y:248,size:56},{type:"signal",side:"right",x:1214,y:248,size:56},
+ {type:"text",value:"speed",x:960,y:330,align:"center",size:190,weight:500,font:"tech",fill:textColor},
+ {type:"text",unit_of:"speed",uppercase:true,x:960,y:452,align:"center",size:22,weight:700,spacing:0.2,fill:accent},
+ {type:"gears",x:860,y:520,width:200,size:26,active_size:36,active_weight:700,color:dimColor,active_color:accent},
+ {type:"ring",center:[390,350],radius:105,width:12,start:-135,sweep:270,value:"battery",from:[0,100],color:accent,track:track},
+ {type:"text",value:"battery",x:390,y:350,align:"center",size:46,weight:400,font:"tech",fill:textColor},
+ {type:"text",word:"battery",x:390,y:475,align:"center",size:17,weight:600,spacing:0.16,fill:dimColor},
+ {type:"ring",center:[1530,350],radius:105,width:12,start:-135,sweep:270,value:"range",from:[0,600],color:secondary,track:track},
+ {type:"text",value:"range",unit:{size:18},x:1530,y:350,align:"center",size:48,weight:400,font:"tech",fill:textColor},
+ {type:"text",word:"range",x:1530,y:475,align:"center",size:17,weight:600,spacing:0.16,fill:dimColor},
+ {type:"line",from:[610,585],to:[1310,585],stroke:{paint:track,width:2}},
+ {type:"text",word:"mode",x:960,y:635,align:"center",size:18,weight:600,spacing:0.16,fill:dimColor}
+ ];
+ if(c.layout==="horizontal")parts.splice(1,2,{type:"rect",x:510,y:250,width:900,height:8,radius:4,fill:track},{type:"rect",x:510,y:250,width:900,height:8,radius:4,fill:accent,glow:{color:accent,size:8,strength:0.25},reveal:{value:"speed",from:[0,speedMax],direction:"right",smooth:250}});
+ return {yoldas_dial:1,name:title,description:"AI tarafindan olusturulan tasarim.",background:{night:"#05070B",day:"#EEF1F4"},parts};
+}
+function aiSetStatus(message,isGood=false){$("extraStatus").textContent=message;$("extraStatus").style.color=isGood?"#42d6a0":"#ffbd58";}
+async function aiAskAtelier(imageData,prompt){
+ const blob=await (await fetch(imageData)).blob(),form=new FormData();form.append("image",blob,"kadran-referans.jpg");form.append("prompt",prompt);
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
+ try{
+  const response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form,signal:controller.signal});
+  const raw=await response.text();let data;try{data=JSON.parse(raw)}catch{throw new Error("AI yanıtı geçerli JSON değil: "+raw.slice(0,180))}
+  if(!response.ok||!data.success)throw new Error(data.detail||data.error||("AI HTTP "+response.status));
+  if(!data.config||typeof data.config!=="object")throw new Error("AI config döndürmedi.");return data.config;
+ }catch(e){if(e.name==="AbortError")throw new Error("AI 90 saniyede yanıt vermedi.");throw e}
+ finally{clearTimeout(timer)}
+}
+async function runAtelierAIJob(){
+ if(new URLSearchParams(location.search).get("ai")!=="1")return;
+ let job;try{job=JSON.parse(localStorage.getItem("kadran_atolye_ai_job")||"null")}catch{}
+ if(!job||!job.image||!job.config){aiSetStatus("AI işi bulunamadı. AI ekranından yeniden tasarım oluştur.");return}
+ const buttons=["validate","repair","sample","import","format","copy","download","copyErrors","downloadSvg","copyPrompt"].map(id=>$(id)).filter(Boolean);buttons.forEach(b=>b.disabled=true);
+ aiSetStatus("AI Atölye'de tasarımı oluşturuyor ve denetliyor…");
+ try{
+  let cfg=job.config,errors=[];
+  for(let round=1;round<=7;round++){
+   doc=aiMakeDial(cfg);$("json").value=JSON.stringify(doc,null,2);render();errors=validate(doc);showReport();
+   if(!errors.length)break;
+   if(round===7)break;
+   aiSetStatus("Atölye "+errors.length+" hata buldu · AI otomatik düzeltme "+round+"/6");
+   const repairPrompt="Sen Kadran Atölyesi tasarım düzeltme yapay zekasısın. Kullanıcının görselini ve ilk isteğini koru. Atölye doğrulayıcısının bulduğu hataları gider. Yalnızca JSON config döndür; desteklenen alanlar: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. layout: dual-dial/single-dial/horizontal/minimal; gaugeStyle: neon/solid/minimal; renkler #RRGGBB. Tasarımı baştan farklılaştırma.\nİLK İSTEK: "+job.prompt+"\nHATALAR: "+errors.join(" | ")+"\nMEVCUT CONFIG: "+JSON.stringify(cfg)+"\nMEVCUT ATÖLYE JSON: "+JSON.stringify(doc);
+   cfg=await aiAskAtelier(job.image,repairPrompt);
+  }
+  doc=aiMakeDial(cfg);$("json").value=JSON.stringify(doc,null,2);render();showReport();errors=validate(doc);
+  if(errors.length){aiSetStatus("6 düzeltme turundan sonra kalan Atölye hataları: "+errors.join(" · "));return}
+  localStorage.setItem("kadran_atolye_json",JSON.stringify(doc));localStorage.setItem("kadran_atolye_name",doc.name||"AI Kadran");localStorage.removeItem("kadran_atolye_ai_job");
+  aiSetStatus("✓ AI TASARIMI TAMAMLADI · ATÖLYE HATA BULMADI · TASARIM EKRANDA HAZIR",true);
+  $("errors").textContent="✓ AI tasarımı Atölye doğrulamasından hatasız geçti. Son tasarım aşağıdaki canlı önizlemede gösteriliyor.";$("errors").className="report good";
+ }catch(e){aiSetStatus("AI otomatik düzeltme hatası: "+e.message)}
+ finally{buttons.forEach(b=>b.disabled=false)}
+}
+
 const incoming=localStorage.getItem("kadran_atolye_json");if(incoming){try{doc=JSON.parse(incoming)}catch{doc=structuredClone(sample)}}$("json").value=JSON.stringify(doc,null,2);render();showReport();
+runAtelierAIJob();
 </script>
 </body></html>
