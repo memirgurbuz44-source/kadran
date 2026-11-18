@@ -215,13 +215,13 @@ $("fixYoldasErrors").onclick=async()=>{
  button.textContent="↻ HATALAR AI TARAFINDAN DÜZELTİLİYOR...";
  try{
   const copied=await navigator.clipboard.readText();
-  if(!copied.trim())throw new Error("Önce Yoldaş Atölyesi'nde 'Hataları yapay zekâya kopyala' düğmesine bas.");
+  if(!copied.trim())throw new Error("Önce Kadran Atölyesi'nde 'Hataları kopyala' düğmesine bas.");
   if(!selectedImage)throw new Error("AI'nın tasarımı yeniden düzenleyebilmesi için aynı kadran görselini bu sayfaya tekrar yükle.");
   const currentDial=window.__lastYoldasDial||makeYoldasCode(config);
   const form=new FormData();
   form.append("image",selectedImage);
   form.append("prompt",
-   "BU BİR HATA DÜZELTME GÖREVİDİR. Yeni tasarım uydurma. Önceki tasarım JSON'unu ve Yoldaş Atölyesi'nin GERÇEK hata mesajlarını incele. Hataların her birini gider. Yalnızca desteklenen config alanlarını döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. Renkler #RRGGBB olsun.\n"+
+   "BU BİR HATA DÜZELTME GÖREVİDİR. Yeni tasarım uydurma. Önceki tasarım JSON'unu ve Kadran Atölyesi'nin hata raporunu incele. Hataların her birini gider. Yalnızca desteklenen config alanlarını döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. Renkler #RRGGBB olsun.\n"+
    "YOLDAŞ HATA MESAJLARI:\n"+copied+"\n\nMEVCUT TASARIM JSON:\n"+JSON.stringify(currentDial)+"\n\nKullanıcının ilk isteği: "+$("prompt").value.trim()
   );
   $("jsonStatus").textContent="YOLDAŞ HATALARI AI'YA GÖNDERİLİYOR...";
