@@ -73,9 +73,36 @@
     return candidates[0] || null;
   }
 
+  function loadAsFile() {
+    const input = [...document.querySelectorAll('input[type="file"]')]
+      .find(el => !el.disabled);
+    if (!input) return false;
+    try {
+      const file = new File([code], "kadran-ai.json", {
+        type: "application/json",
+        lastModified: Date.now()
+      });
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      showStatus("Kadran AI JSON dosyası Atölye'ye otomatik yüklendi. Önizleme hazırlanıyor.");
+      history.replaceState(null, "", location.pathname + location.search);
+      return true;
+    } catch (error) {
+      console.warn("Dosya alanına otomatik aktarım başarısız:", error);
+      return false;
+    }
+  }
+
   let attempts = 0;
   const timer = setInterval(() => {
     attempts++;
+    if (loadAsFile()) {
+      clearInterval(timer);
+      return;
+    }
     const editor = findEditor();
 
     if (editor) {
