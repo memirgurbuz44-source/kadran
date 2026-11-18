@@ -134,6 +134,62 @@ function makeYoldasCode(c){
  }
  return {yoldas_dial:1,name:title,description:"Kadran AI tarafindan olusturulan, Yoldas Kadran Tasarim Kiti v2 alanlarina gore hazirlanmis tasarim.",background:{night:"#05070B",day:"#EEF1F4"},parts};
 }
+
+const YOLDAS_PART_TYPES=new Set(["circle","arc","path","rect","line","text","scale","group","repeat","gears","signal","bar","ring","clock","nav","media","speed_limit","ready","asset","window"]);
+function validateYoldasDial(doc){
+ const errors=[];
+ if(!doc||typeof doc!=="object"||Array.isArray(doc))return ["Dosya JSON nesnesi değil."];
+ if(doc.yoldas_dial!==1)errors.push("yoldas_dial sürümü 1 olmalı.");
+ if(typeof doc.name!=="string"||!doc.name.trim())errors.push("name alanı eksik.");
+ if(!doc.background||typeof doc.background!=="object"||!doc.background.night||!doc.background.day)errors.push("background içinde night ve day renkleri olmalı.");
+ if(!Array.isArray(doc.parts))errors.push("parts dizisi eksik.");
+ else{
+  if(doc.parts.length>400)errors.push("400 parça sınırı aşıldı.");
+  const types=doc.parts.map(p=>p&&p.type);
+  if(!types.includes("gears"))errors.push("Vites göstergesi (gears) eksik.");
+  if(types.filter(t=>t==="signal").length<2)errors.push("Sol ve sağ sinyal göstergeleri eksik.");
+  if(!doc.parts.some(p=>p&&p.type==="text"&&p.value==="speed"))errors.push("Hız metni (value: speed) eksik.");
+  doc.parts.forEach((p,i)=>{
+   if(!p||typeof p!=="object"||!YOLDAS_PART_TYPES.has(p.type))errors.push("parts["+i+"]: desteklenmeyen parça türü.");
+   if(p&&p.type==="text"&&p.value==="speed"&&!(Number(p.size)>=120))errors.push("Hız yazısı en az 120 boyutunda olmalı.");
+   if(p&&p.type==="gears"&&!(Number(p.size)>=22))errors.push("Vites yazısı en az 22 boyutunda olmalı.");
+  });
+ }
+ try{if(new Blob([JSON.stringify(doc)]).size>256*1024)errors.push("JSON dosyası 256 KB sınırını aşıyor.");}catch{errors.push("JSON serileştirilemiyor.");}
+ return [...new Set(errors)];
+}
+function repairYoldasDial(doc){
+ const fixed=JSON.parse(JSON.stringify(doc||{}));
+ fixed.yoldas_dial=1;
+ fixed.name=String(fixed.name||"AI DIGITAL COCKPIT").slice(0,60);
+ fixed.description=String(fixed.description||"Yoldas Kadran Atolyesi icin olusturuldu.");
+ fixed.background={night:fixed.background?.night||"#05070B",day:fixed.background?.day||"#EEF1F4"};
+ if(!Array.isArray(fixed.parts))fixed.parts=[];
+ fixed.parts=fixed.parts.filter(p=>p&&typeof p==="object"&&YOLDAS_PART_TYPES.has(p.type)).slice(0,400);
+ let speed=fixed.parts.find(p=>p.type==="text"&&p.value==="speed");
+ if(!speed){speed={type:"text",value:"speed",x:960,y:350,align:"center",size:190,weight:500,font:"tech",fill:"#F4F7FA"};fixed.parts.push(speed);}
+ speed.size=Math.max(120,Number(speed.size)||190);
+ let gears=fixed.parts.find(p=>p.type==="gears");
+ if(!gears){gears={type:"gears",x:860,y:520,width:200,size:26,active_size:36,active_weight:700,color:"#AAB6C2",active_color:"#20C9FF"};fixed.parts.push(gears);}
+ gears.size=Math.max(22,Number(gears.size)||26);
+ const signals=fixed.parts.filter(p=>p.type==="signal");
+ if(!signals.some(p=>p.side==="left"))fixed.parts.push({type:"signal",side:"left",x:650,y:248,size:56});
+ if(!signals.some(p=>p.side==="right"))fixed.parts.push({type:"signal",side:"right",x:1214,y:248,size:56});
+ return fixed;
+}
+function validateAndRepairYoldas(input){
+ let doc=input,history=[];
+ for(let pass=1;pass<=5;pass++){
+  let errors=validateYoldasDial(doc);
+  if(!errors.length)return {doc,passes:pass-1,history};
+  history.push({pass,errors});
+  doc=repairYoldasDial(doc);
+ }
+ const remaining=validateYoldasDial(doc);
+ if(remaining.length)throw new Error("Yoldaş uyumluluk kontrolü tamamlanamadı: "+remaining.join(" "));
+ return {doc,passes:5,history};
+}
+
 function downloadYoldas(){
  const data=JSON.stringify(makeYoldasCode(config),null,2);
  const blob=new Blob([data],{type:"application/json"});
@@ -175,15 +231,20 @@ $("generate").onclick=async()=>{
   if(!data.config||typeof data.config!=="object")throw new Error("AI geçerli tasarım döndürmedi.");
   config={...defaults,...data.config};
   json();render();
-  const yoldasCode=JSON.stringify(makeYoldasCode(config),null,2);
+  $("jsonStatus").textContent="YOLDAŞ UYUMLULUĞU DENETLENİYOR...";
+  let checked=validateAndRepairYoldas(makeYoldasCode(config));
+  // Use the repaired, validated Yoldaş document as the final export.
+  const yoldasCode=JSON.stringify(checked.doc,null,2);
+  $("jsonEditor").value=JSON.stringify(config,null,2);
   try{
    await navigator.clipboard.writeText(yoldasCode);
-   $("jsonStatus").textContent="YOLDAŞ DOSYASI KOPYALANDI · ATÖLYEDE CTRL+V";
+   $("jsonStatus").textContent="✓ YOLDAŞ KONTROLÜ TAMAM · "+checked.passes+" DÜZELTME TURU · CTRL+V";
   }catch{
-   $("jsonStatus").textContent="TASARIM HAZIR · JSON ALANI GÜNCELLENDİ";
+   $("jsonStatus").textContent="✓ YOLDAŞ KONTROLÜ TAMAM · JSON İNDİR DÜĞMESİNİ KULLAN";
   }
   $("jsonStatus").style.color="#39d99b";
   if(yoldasTab && !yoldasTab.closed){yoldasTab.focus();}
+  window.__lastYoldasDial=checked.doc;
  }catch(error){
   $("jsonStatus").textContent="AI HATASI: "+error.message;
   $("jsonStatus").style.color="#ff7474";
