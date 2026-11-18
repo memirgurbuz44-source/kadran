@@ -85,7 +85,7 @@ $("speedSlider").oninput=e=>{config.speed=+e.target.value;json();render();};
 $("rpmSlider").oninput=e=>{config.rpm=+e.target.value;json();render();};
 function makeYoldasCode(c){
  const accent=safeColor(c.accent,"#20C9FF"),secondary=safeColor(c.secondary,"#8B5CF6");
- const title=String(c.name||"DIGITAL COCKPIT").replace(/[\\r\\n]+/g," ").slice(0,40);
+ const title=String(c.name||"DIGITAL COCKPIT").replace(/[\\r\\n]+/g," ").slice(0,24);
  const ink={night:"#F4F7FA",day:"#17212B"},dim={night:"#AAB6C2",day:"#526170"};
  const track={night:"#FFFFFF20",day:"#10151C20"};
  const parts=[
