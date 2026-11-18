@@ -102,38 +102,47 @@ $("exportSvg").onclick=svgExport;$("exportPng").onclick=pngExport;
 try{const old=localStorage.getItem("kadran-ai-autosave");if(old)config={...defaults,...JSON.parse(old)};}catch{}
 function makeYoldasCode(c){
  const accent=safeColor(c.accent,"#20C9FF"),secondary=safeColor(c.secondary,"#8B5CF6");
- const title=String(c.name||"DIGITAL COCKPIT").replace(/[\\r\\n]+/g," ").slice(0,24);
- const ink={night:"#F4F7FA",day:"#17212B"},dim={night:"#AAB6C2",day:"#526170"};
- const track={night:"#FFFFFF20",day:"#10151C20"};
+ const title=String(c.name||"DIGITAL COCKPIT").replace(/[\\r\\n]+/g," ").slice(0,40);
+ const textColor={night:"#F4F7FA",day:"#17212B"};
+ const dimColor={night:"#AAB6C2",day:"#526170"};
+ const track={night:"#FFFFFF24",day:"#10151C20"};
+ const speedMax=clamp(c.maxSpeed||240,80,400);
  const parts=[
-  {type:"ellipse",center:[960,360],rx:900,ry:300,fill:{radial:{center:[960,330],radius:980,stops:[[0,"#17232E"],[0.78,"#0A1118"],[1,"#030609"]]}},stroke:{paint:"#354553",width:8}},
-  {type:"ellipse",center:[960,360],rx:865,ry:267,fill:"#080E14",stroke:{paint:secondary,width:3},glow:{color:secondary,size:12,strength:0.35}},
-  {type:"arc",center:[960,360],radius:820,start:-115,sweep:230,stroke:{paint:accent,width:3,cap:"round"}},
-  {type:"text",text:title,x:960,y:88,align:"center",size:24,weight:700,spacing:0.18,fill:dim},
-  {type:"ready",x:900,y:112,width:120,height:34},
-  {type:"signal",side:"left",x:360,y:292,size:56,color:"$signal"},
-  {type:"signal",side:"right",x:1504,y:292,size:56,color:"$signal"},
-  {type:"circle",center:[420,360],radius:150,fill:"#0B141C",stroke:{paint:"#30404D",width:4}},
-  {type:"ring",center:[420,360],radius:118,width:12,start:-135,sweep:270,value:"battery",from:[0,100],color:{value:"battery",steps:[[20,"$warning"]],color:accent},track:track},
-  {type:"text",value:"battery",x:420,y:360,align:"center",size:48,weight:500,font:"tech",fill:ink},
-  {type:"text",word:"battery",x:420,y:438,align:"center",size:18,weight:600,spacing:0.16,fill:dim},
-  {type:"circle",center:[1500,360],radius:150,fill:"#0B141C",stroke:{paint:"#30404D",width:4}},
-  {type:"ring",center:[1500,360],radius:118,width:12,start:-135,sweep:270,value:"range",from:[0,600],color:secondary,track:track},
-  {type:"text",value:"range",unit:{size:20},x:1500,y:360,align:"center",size:54,weight:500,font:"tech",fill:ink},
-  {type:"text",word:"range",x:1500,y:438,align:"center",size:18,weight:600,spacing:0.16,fill:dim},
-  {type:"circle",center:[960,350],radius:248,fill:"#0A121A",stroke:{paint:"#354653",width:5}},
-  {type:"arc",center:[960,350],radius:225,start:-140,sweep:280,stroke:{paint:track,width:10,cap:"round"}},
-  {type:"arc",center:[960,350],radius:225,start:-140,sweep:280,stroke:{paint:accent,width:5,cap:"round"},glow:{color:accent,size:14,strength:0.5}},
-  {type:"text",value:"speed",x:960,y:335,align:"center",valign:"middle",size:190,weight:650,font:"tech",fill:ink},
-  {type:"text",unit_of:"speed",uppercase:true,x:960,y:455,align:"center",size:24,weight:700,spacing:0.2,fill:accent},
-  {type:"text",value:"gear",x:960,y:535,align:"center",size:42,weight:700,font:"tech",fill:ink},
-  {type:"line",from:[650,610],to:[1270,610],stroke:{paint:track,width:2}},
-  {type:"text",word:"mode",x:960,y:650,align:"center",size:18,weight:600,spacing:0.18,fill:dim}
+  {type:"circle",center:[960,350],radius:315,fill:{radial:{center:[960,350],radius:315,stops:[[0,accent+"18"],[1,"#05070B00"]]}},stroke:{paint:accent+"55",width:3}},
+  {type:"arc",center:[960,350],radius:275,start:-135,sweep:270,stroke:{paint:track,width:14,cap:"round"}},
+  {type:"arc",center:[960,350],radius:275,start:-135,sweep:270,stroke:{paint:accent,width:5,cap:"round"},glow:{color:accent,size:12,strength:0.35}},
+  {type:"text",text:title,x:960,y:92,align:"center",size:24,weight:700,spacing:0.16,fill:dimColor},
+  {type:"signal",side:"left",x:650,y:248,size:56},
+  {type:"signal",side:"right",x:1214,y:248,size:56},
+  {type:"text",value:"speed",x:960,y:330,align:"center",size:190,weight:500,font:"tech",fill:textColor},
+  {type:"text",unit_of:"speed",uppercase:true,x:960,y:452,align:"center",size:22,weight:700,spacing:0.2,fill:accent},
+  {type:"gears",x:860,y:520,width:200,size:26,active_size:36,active_weight:700,color:dimColor,active_color:accent},
+  {type:"ring",center:[390,350],radius:105,width:12,start:-135,sweep:270,value:"battery",from:[0,100],color:{value:"battery",steps:[[20,"$warning"]],color:accent},track:track},
+  {type:"text",value:"battery",x:390,y:350,align:"center",size:46,weight:400,font:"tech",fill:textColor},
+  {type:"text",word:"battery",x:390,y:475,align:"center",size:17,weight:600,spacing:0.16,fill:dimColor},
+  {type:"ring",center:[1530,350],radius:105,width:12,start:-135,sweep:270,value:"range",from:[0,600],color:secondary,track:track},
+  {type:"text",value:"range",unit:{size:18},x:1530,y:350,align:"center",size:48,weight:400,font:"tech",fill:textColor},
+  {type:"text",word:"range",x:1530,y:475,align:"center",size:17,weight:600,spacing:0.16,fill:dimColor},
+  {type:"line",from:[610,585],to:[1310,585],stroke:{paint:track,width:2}},
+  {type:"text",word:"mode",x:960,y:635,align:"center",size:18,weight:600,spacing:0.16,fill:dimColor}
  ];
- return {yoldas_dial:1,name:title,description:"Gorsel referansina gore olusturulmus oval dijital gosterge tasarimi.",background:{night:"#05080C",day:"#EEF2F5"},parts};
+ if(c.layout==="horizontal"){
+  parts.splice(1,2,
+   {type:"rect",x:510,y:250,width:900,height:8,radius:4,fill:track},
+   {type:"rect",x:510,y:250,width:900,height:8,radius:4,fill:accent,glow:{color:accent,size:8,strength:0.25},reveal:{value:"speed",from:[0,speedMax],direction:"right",smooth:250}}
+  );
+ }
+ return {yoldas_dial:1,name:title,description:"Kadran AI tarafindan olusturulan, Yoldas Kadran Tasarim Kiti v2 alanlarina gore hazirlanmis tasarim.",background:{night:"#05070B",day:"#EEF1F4"},parts};
+}
+function downloadYoldas(){
+ const data=JSON.stringify(makeYoldasCode(config),null,2);
+ const blob=new Blob([data],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+ a.download=(config.name||"yoldas-kadran").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".json";
+ a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1200);
 }
 function download(){try{applyEditor();const blob=new Blob([JSON.stringify(config,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(config.name||"kadran").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".json";a.click();URL.revokeObjectURL(a.href);}catch{}}
-$("downloadTop").onclick=download;
+$("downloadTop").onclick=downloadYoldas;
 $("copyJson").onclick=async()=>{try{await navigator.clipboard.writeText($("jsonEditor").value);$("copyJson").textContent="KOPYALANDI";setTimeout(()=>$("copyJson").textContent="KOPYALA",1400);}catch{$("jsonEditor").select();document.execCommand("copy");}};
 $("formatJson").onclick=()=>{try{$("jsonEditor").value=JSON.stringify(JSON.parse($("jsonEditor").value),null,2);applyEditor();}catch{$("jsonStatus").textContent="JSON HATASI";}};
 $("reset").onclick=()=>commitConfig({...defaults});
@@ -169,7 +178,7 @@ $("generate").onclick=async()=>{
   const yoldasCode=JSON.stringify(makeYoldasCode(config),null,2);
   try{
    await navigator.clipboard.writeText(yoldasCode);
-   $("jsonStatus").textContent="TASARIM HAZIR · YOLDAŞ KODU KOPYALANDI";
+   $("jsonStatus").textContent="YOLDAŞ DOSYASI KOPYALANDI · ATÖLYEDE CTRL+V";
   }catch{
    $("jsonStatus").textContent="TASARIM HAZIR · JSON ALANI GÜNCELLENDİ";
   }
