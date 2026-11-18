@@ -23,3 +23,9 @@ Resmî rehber: https://docs.github.com/en/pages/getting-started-with-github-page
 
 ## AI entegrasyonu hakkında
 Bu sürümdeki “Taslak oluştur” düğmesi prompt içindeki renk/stil ifadelerine göre yerel bir JSON taslağı üretir; gerçek görsel analizi yapan bir AI servisine bağlı değildir. Gerçek AI için API anahtarı tarayıcı koduna konmamalı; anahtarın sunucuda tutulduğu bir backend/proxy eklenmelidir.
+
+## Kadran Atölyesi
+- `atolye.html` dosyası bağımsız yerel kadran editörüdür.
+- `index.html` içindeki Kadran Atölyesi bağlantısı editörü açar.
+- AI ile oluşturulan Yoldaş uyumlu JSON aynı tarayıcıda `localStorage` üzerinden Atölye'ye aktarılır.
+- Atölye JSON düzenleme, temel şema denetimi, otomatik temel düzeltme, SVG önizleme, panoya kopyalama ve JSON indirme özelliklerini içerir.
