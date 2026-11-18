@@ -4,34 +4,36 @@ let config={...defaults};
 let selectedImage=null;
 function json(){$("jsonEditor").value=JSON.stringify(config,null,2);$("jsonStatus").textContent="JSON HAZIR";}
 function parseJsonWithControlRepair(raw){
- const clean=String(raw??"").replace(/^\uFEFF/,"").trim();
- try{return JSON.parse(clean);}catch(firstError){
-  let out="",inString=false,escaped=false;
-  for(let i=0;i<clean.length;i++){
-   const ch=clean[i],code=clean.charCodeAt(i);
-   if(inString){
-    if(escaped){out+=ch;escaped=false;continue;}
-    if(ch==="\\"){out+=ch;escaped=true;continue;}
-    if(ch==='"'){out+=ch;inString=false;continue;}
-    if(code<0x20){
-     if(ch==="\n")out+="\\n";
-     else if(ch==="\r")out+="\\r";
-     else if(ch==="\t")out+="\\t";
-     else out+="\\u"+code.toString(16).padStart(4,"0");
-     continue;
-    }
-    out+=ch;
-   }else{
-    if(ch==='"')inString=true;
-    out+=ch;
-   }
+ const original=String(raw??"").replace(/^\\uFEFF/,"").trim();
+ const candidates=[original];
+ const fenced=original.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/i);
+ if(fenced)candidates.push(fenced[1].trim());
+ const first=original.indexOf("{"),last=original.lastIndexOf("}");
+ if(first>=0&&last>first)candidates.push(original.slice(first,last+1));
+ let lastError;
+ for(const candidate of [...new Set(candidates)]){
+  let cleaned="",inside=false,escaped=false;
+  for(let i=0;i<candidate.length;i++){
+   const ch=candidate[i],code=candidate.charCodeAt(i);
+   if(inside){
+    if(escaped){cleaned+=ch;escaped=false;continue;}
+    if(ch==="\\\\"){cleaned+=ch;escaped=true;continue;}
+    if(ch==='"'){cleaned+=ch;inside=false;continue;}
+    if(code<32){cleaned+=ch==="\\n"?"\\\\n":ch==="\\r"?"\\\\r":ch==="\\t"?"\\\\t":"\\\\u"+code.toString(16).padStart(4,"0");continue;}
+    cleaned+=ch;
+   }else{if(ch==='"')inside=true;cleaned+=ch;}
   }
-  try{return JSON.parse(out);}catch(secondError){
-   const pos=Number(firstError.message.match(/position (\d+)/)?.[1]||0);
-   const excerpt=clean.slice(Math.max(0,pos-100),Math.min(clean.length,pos+180));
-   throw new Error("AI yanıtı bozuk JSON içeriyor. "+firstError.message+" Yanıt parçası: "+excerpt);
-  }
+  const variants=[cleaned,
+   cleaned.replace(/(["}\\]0-9]|true|false|null)([ \\t]*\\r?\\n[ \\t]*")(?=[^\\n"]*"\\s*:)/g,"$1,$2"),
+   cleaned.replace(/,([ \\t\\r\\n]*[}\\]])/g,"$1")
+  ];
+  variants.push(variants[1].replace(/,([ \\t\\r\\n]*[}\\]])/g,"$1"));
+  for(const variant of variants){try{return JSON.parse(variant);}catch(e){lastError=e;}}
  }
+ const message=lastError?.message||"Yanıt geçerli JSON değil.";
+ const pos=Number(message.match(/position (\\d+)/)?.[1]||0);
+ const excerpt=original.slice(Math.max(0,pos-100),Math.min(original.length,pos+180));
+ throw new Error("Sunucudan gelen yanıt JSON olarak okunamadı. "+message+" Yanıtın başlangıcı: "+original.slice(0,500)+" | Hata çevresi: "+excerpt);
 }
 function safeColor(v,f){return typeof v==="string"&&/^#[0-9a-fA-F]{6}$/.test(v)?v:f;}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
