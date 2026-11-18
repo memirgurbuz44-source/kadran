@@ -87,6 +87,7 @@ $("sample").onclick=()=>{config={...defaults,name:"MIDNIGHT GT",accent:"#ff3b62"
 $("generate").onclick=async()=>{
  const button=$("generate");
  if(!selectedImage){alert("Önce sol taraftan bir kadran fotoğrafı yükle.");return;}
+ const yoldasTab=window.open("https://yoldas.io/kadran-atolyesi","_blank");
  button.disabled=true;button.textContent="✳ YENİ TASARIM OLUŞTURULUYOR...";$("jsonStatus").textContent="AI YENİ TASARIM HAZIRLIYOR...";
  try{
   const form=new FormData();form.append("image",selectedImage);form.append("prompt",$("prompt").value.trim());
@@ -103,7 +104,7 @@ $("generate").onclick=async()=>{
    $("jsonStatus").textContent="TASARIM HAZIR · KODU KOPYALA BUTONUYLA AL";
   }
   $("jsonStatus").style.color="#39d99b";
-  const yoldasTab=window.open("https://yoldas.io/kadran-atolyesi","_blank");
+  if(yoldasTab){yoldasTab.focus();}
   if(!yoldasTab){
    $("jsonStatus").textContent="AÇILIR PENCERE ENGELLENDİ · YOLDAŞ'I AÇ VE KODU YAPIŞTIR";
   }
