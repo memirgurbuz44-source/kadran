@@ -265,7 +265,7 @@ $("generate").onclick=async()=>{
  button.disabled=true;button.textContent="✳ AI TASARIMI HAZIRLIYOR...";
  $("jsonStatus").textContent="GÖRSEL AI'YA GÖNDERİLİYOR...";
  $("jsonStatus").style.color="#20c9ff";
- let yoldasTab=window.open("https://yoldas.io/kadran-atolyesi","_blank");
+ let yoldasTab=window.open("about:blank","_blank");
  try{
   const form=new FormData();
   form.append("image",selectedImage);
@@ -291,6 +291,7 @@ $("generate").onclick=async()=>{
   let checked=validateAndRepairYoldas(makeYoldasCode(config));
   // Use the repaired, validated Yoldaş document as the final export.
   const yoldasCode=JSON.stringify(checked.doc,null,2);
+  localStorage.setItem("kadran_atolye_json",yoldasCode);
   $("jsonEditor").value=JSON.stringify(config,null,2);
   try{
    await navigator.clipboard.writeText(yoldasCode);
@@ -299,7 +300,7 @@ $("generate").onclick=async()=>{
    $("jsonStatus").textContent="✓ YOLDAŞ KONTROLÜ TAMAM · JSON İNDİR DÜĞMESİNİ KULLAN";
   }
   $("jsonStatus").style.color="#39d99b";
-  if(yoldasTab && !yoldasTab.closed){yoldasTab.focus();}
+  if(yoldasTab && !yoldasTab.closed){yoldasTab.location.href="atolye.html";yoldasTab.focus();}
   window.__lastYoldasDial=checked.doc;
  }catch(error){
   $("jsonStatus").textContent="AI HATASI: "+error.message;
