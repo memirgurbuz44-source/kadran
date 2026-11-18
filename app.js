@@ -135,7 +135,7 @@ $("generate").onclick=async()=>{
  button.disabled=true;button.textContent="✳ AI TASARIMI HAZIRLIYOR...";
  $("jsonStatus").textContent="GÖRSEL AI'YA GÖNDERİLİYOR...";
  $("jsonStatus").style.color="#20c9ff";
- let yoldasTab=null;
+ let yoldasTab=window.open("about:blank","_blank");
  try{
   const form=new FormData();
   form.append("image",selectedImage);
@@ -159,10 +159,10 @@ $("generate").onclick=async()=>{
    $("jsonStatus").textContent="TASARIM HAZIR · JSON ALANI GÜNCELLENDİ";
   }
   $("jsonStatus").style.color="#39d99b";
-  yoldasTab=window.open("https://yoldas.io/kadran-atolyesi#kadran-ai="+encodeURIComponent(yoldasCode),"_blank");
-  if(yoldasTab){yoldasTab.focus();}
+  if(yoldasTab){yoldasTab.location.href="https://yoldas.io/kadran-atolyesi#kadran-ai="+encodeURIComponent(yoldasCode);yoldasTab.focus();}
   else{$("jsonStatus").textContent+=" · YOLDAŞ SEKME AÇILAMADI (POPUP ENGELİ)";}
  }catch(error){
+  if(yoldasTab&&!yoldasTab.closed)yoldasTab.close();
   $("jsonStatus").textContent="AI HATASI: "+error.message;
   $("jsonStatus").style.color="#ff7474";
   alert("AI tasarımı oluşturulamadı:\n"+error.message);
