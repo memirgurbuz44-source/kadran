@@ -3,6 +3,36 @@ const defaults={name:"NEON PERFORMANCE",maxSpeed:240,maxRpm:8000,theme:"dark",ac
 let config={...defaults};
 let selectedImage=null;
 function json(){$("jsonEditor").value=JSON.stringify(config,null,2);$("jsonStatus").textContent="JSON HAZIR";}
+function parseJsonWithControlRepair(raw){
+ const clean=String(raw??"").replace(/^\\uFEFF/,"").trim();
+ try{return JSON.parse(clean);}catch(firstError){
+  let out="",inString=false,escaped=false;
+  for(let i=0;i<clean.length;i++){
+   const ch=clean[i],code=clean.charCodeAt(i);
+   if(inString){
+    if(escaped){out+=ch;escaped=false;continue;}
+    if(ch==="\\"){out+=ch;escaped=true;continue;}
+    if(ch==='"'){out+=ch;inString=false;continue;}
+    if(code<0x20){
+     if(ch==="\\n")out+="\\\\n";
+     else if(ch==="\\r")out+="\\\\r";
+     else if(ch==="\\t")out+="\\\\t";
+     else out+="\\\\u"+code.toString(16).padStart(4,"0");
+     continue;
+    }
+    out+=ch;
+   }else{
+    if(ch==='"')inString=true;
+    out+=ch;
+   }
+  }
+  try{return JSON.parse(out);}catch(secondError){
+   const pos=Number(firstError.message.match(/position (\\d+)/)?.[1]||0);
+   const excerpt=clean.slice(Math.max(0,pos-100),Math.min(clean.length,pos+180));
+   throw new Error("AI yanıtı bozuk JSON içeriyor. "+firstError.message+" Yanıt parçası: "+excerpt);
+  }
+ }
+}
 function safeColor(v,f){return typeof v==="string"&&/^#[0-9a-fA-F]{6}$/.test(v)?v:f;}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function clamp(v,min,max){const n=Number(v);return Number.isFinite(n)?Math.min(max,Math.max(min,n)):min;}
@@ -100,8 +130,11 @@ $("generate").onclick=async()=>{
   form.append("image",selectedImage);
   form.append("prompt",$("prompt").value.trim());
   const response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form});
+  const rawResponse=await response.text();
   let data;
-  try{data=await response.json();}catch{throw new Error("AI sunucusu geçerli yanıt vermedi (HTTP "+response.status+").");}
+  try{data=parseJsonWithControlRepair(rawResponse);}catch(parseError){
+   throw new Error("AI sunucusunun yanıtı okunamadı (HTTP "+response.status+"). "+parseError.message);
+  }
   if(!response.ok||!data.success)throw new Error(data.detail||data.error||("AI isteği başarısız oldu (HTTP "+response.status+")."));
   if(!data.config||typeof data.config!=="object")throw new Error("AI geçerli tasarım döndürmedi.");
   config={...defaults,...data.config};
