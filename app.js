@@ -191,7 +191,8 @@ function validateAndRepairYoldas(input){
 }
 
 function downloadYoldas(){
- const data=JSON.stringify(makeYoldasCode(config),null,2);
+ const checked=validateAndRepairYoldas(makeYoldasCode(config));
+ const data=JSON.stringify(checked.doc,null,2);
  const blob=new Blob([data],{type:"application/json"});
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
  a.download=(config.name||"yoldas-kadran").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".json";
