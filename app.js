@@ -1,6 +1,7 @@
 const $=id=>document.getElementById(id);
 const defaults={name:"NEON PERFORMANCE",maxSpeed:240,maxRpm:8000,theme:"dark",accent:"#20c9ff",speed:84,rpm:3.2,units:{speed:"KM/H",rpm:"x1000 RPM"},layout:"dual-dial"};
 let config={...defaults};
+let selectedImage=null;
 function json(){ $("jsonEditor").value=JSON.stringify(config,null,2); $("jsonStatus").textContent="JSON HAZIR"; }
 function arcPath(cx,cy,r,start,end){const a=start*Math.PI/180,b=end*Math.PI/180,x1=cx+r*Math.cos(a),y1=cy+r*Math.sin(a),x2=cx+r*Math.cos(b),y2=cy+r*Math.sin(b);return `M ${x1} ${y1} A ${r} ${r} 0 ${end-start>180?1:0} 1 ${x2} ${y2}`;}
 function ticks(group,cx,cy,r,count){let out="";for(let i=0;i<=count;i++){let a=(-215+i/count*250)*Math.PI/180,major=i%5===0,ri=r-(major?15:8),x1=cx+ri*Math.cos(a),y1=cy+ri*Math.sin(a),x2=cx+r*Math.cos(a),y2=cy+r*Math.sin(a);out+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="tick ${major?"major":""}"/>`;}$(group).innerHTML=out;}
@@ -29,9 +30,33 @@ $("copyJson").onclick=async()=>{try{await navigator.clipboard.writeText($("jsonE
 $("formatJson").onclick=()=>{try{$("jsonEditor").value=JSON.stringify(JSON.parse($("jsonEditor").value),null,2);applyEditor();}catch{$("jsonStatus").textContent="JSON HATASI";}};
 $("reset").onclick=()=>{config={...defaults};json();render();};
 $("sample").onclick=()=>{config={...defaults,name:"MIDNIGHT GT",accent:"#ff3b62",maxSpeed:320,maxRpm:9000,speed:126,rpm:4.8};json();render();};
-$("generate").onclick=()=>{const p=$("prompt").value.toLowerCase();let accent="#20c9ff",name="AI CONCEPT";if(/kırmızı|red/.test(p))accent="#ff3b62";else if(/mor|purple|violet/.test(p))accent="#a879ff";else if(/yeşil|green/.test(p))accent="#4be0a1";else if(/turuncu|orange/.test(p))accent="#ff9c42";else if(/sarı|yellow/.test(p))accent="#f4d35e";if(/yarış|sport|race|gt/.test(p))name="RACING GT";else if(/retro|klasik/.test(p))name="RETRO CLASSIC";else if(/gelecek|futuristik|future/.test(p))name="FUTURE DRIVE";config={...config,name,accent};json();render();$("jsonStatus").textContent="TASLAK OLUŞTU";};
+$("generate").onclick=async()=>{
+ const button=$("generate");
+ if(!selectedImage){alert("Önce sol taraftan bir kadran fotoğrafı yükle.");return;}
+ button.disabled=true;button.textContent="✳ FOTOĞRAF ANALİZ EDİLİYOR...";
+ $("jsonStatus").textContent="AI ANALİZ EDİYOR...";
+ try{
+  const form=new FormData();
+  form.append("image",selectedImage);
+  form.append("prompt",$("prompt").value.trim());
+  const response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form});
+  const data=await response.json();
+  if(!response.ok||!data.success) throw new Error(data.error||"AI isteği başarısız oldu.");
+  if(!data.config||typeof data.config!=="object") throw new Error("AI geçerli tasarım döndürmedi.");
+  config={...defaults,...config,...data.config};
+  json();render();
+  $("jsonStatus").textContent="GERÇEK AI TASARIMI OLUŞTU";
+  $("jsonStatus").style.color="#39d99b";
+ }catch(error){
+  $("jsonStatus").textContent="AI HATASI";
+  $("jsonStatus").style.color="#ff7474";
+  alert("AI hatası: "+error.message);
+ }finally{
+  button.disabled=false;button.textContent="✳ TASARIMI AI İLE OLUŞTUR";
+ }
+};
 $("imageInput").onchange=e=>showImage(e.target.files[0]);
-function showImage(file){if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){alert("Lütfen PNG, JPG veya WEBP görsel seç.");return;}const url=URL.createObjectURL(file);$("referencePreview").innerHTML=`<img src="${url}" alt="Yüklenen kadran referansı">`;}
+function showImage(file){if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){alert("Lütfen PNG, JPG veya WEBP görsel seç.");return;}if(file.size>5*1024*1024){alert("Görsel en fazla 5 MB olabilir.");return;}selectedImage=file;const url=URL.createObjectURL(file);$("referencePreview").innerHTML=`<img src="${url}" alt="Yüklenen kadran referansı">`;}
 const dz=$("dropzone");["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.borderColor="var(--cyan)"}));["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.borderColor=""}));dz.addEventListener("drop",e=>showImage(e.dataTransfer.files[0]));
 $("jsonInput").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{config={...defaults,...JSON.parse(await f.text())};json();render();}catch{alert("Dosyada geçerli JSON bulunamadı.");}e.target.value="";};
 json();render();
