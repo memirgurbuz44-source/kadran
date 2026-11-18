@@ -131,7 +131,7 @@ $("generate").onclick=async()=>{
  try{
   const form=new FormData();
   form.append("image",selectedImage);
-  const visionBrief="REFERANS GORSELINI ANA KAYNAK OLARAK KULLAN. Fotoğraftaki gösterge panelinin geniş oval formunu, ortadaki büyük dijital hız ekranını, soldaki devir göstergesini, sağdaki yakıt seviyesini, üstteki iki sinyal okunu ve READY yazısını ayrı ayrı analiz et. Tasarımı sıradan iki yuvarlak spor göstergeye dönüştürme. Simetriyi, koyu füme cam yüzeyi, siyah dış çerçeveyi, mor-mavi çevresel ışığı ve sarı/yeşil/kırmızı gösterge segmentlerini koru. Çıktı config alanlarında görseldeki ana vurgu rengini accent, ikincil soğuk neon rengini secondary, tahmini hız ve devir üst sınırlarını maxSpeed ve maxRpm olarak belirt. İsim kısa olsun. Görselde olmayan dekoratif öğeler uydurma. Kullanıcı isteği: ";
+  const visionBrief="GÖREV: Yüklenen referans görselini dikkatle incele ve görselin kompozisyonuna sadık, uygulanabilir bir dijital araç gösterge paneli tasarımı için config üret. Önce görselin genel siluetini (oval/dairesel/yatay), ekran bölgelerinin konumlarını, ana/ikincil göstergeleri, yazı tiplerinin karakterini, renk paletini, kontrastı, ışık efektlerini ve boşluk oranlarını analiz et. Sonuçta yalnızca desteklenen config alanlarını kullan: name, maxSpeed, maxRpm, theme, accent, secondary, speed, rpm, units, layout, gaugeStyle, centerText, subtitle. layout yalnızca dual-dial, single-dial, horizontal veya minimal; gaugeStyle yalnızca neon, solid veya minimal olabilir. accent ve secondary #RRGGBB biçiminde olsun. maxSpeed 80-400, maxRpm 3000-12000 aralığında; speed ve rpm bu sınırları aşmasın. Fotoğrafta olmayan iki yuvarlak göstergeyi, ekstra ikonları veya dekoratif parçaları kendiliğinden ekleme. Görselde oval bir panel varsa renkleri ve bilgi hiyerarşisini koruyarak en yakın yatay/dual-dial yerleşimini seç. Metinleri kısa tut. Kullanıcı isteği: ";
   form.append("prompt",visionBrief+$("prompt").value.trim());
   $("jsonStatus").textContent="AI GÖRSELİ İNCELİYOR...";
   const controller=new AbortController();
@@ -157,7 +157,7 @@ $("generate").onclick=async()=>{
    $("jsonStatus").textContent="TASARIM HAZIR · JSON ALANI GÜNCELLENDİ";
   }
   $("jsonStatus").style.color="#39d99b";
-  window.open("https://yoldas.io/kadran-atolyesi","_blank");
+  if(yoldasTab && !yoldasTab.closed){yoldasTab.focus();}
  }catch(error){
   $("jsonStatus").textContent="AI HATASI: "+error.message;
   $("jsonStatus").style.color="#ff7474";
