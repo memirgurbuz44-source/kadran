@@ -91,29 +91,40 @@ $("sample").onclick=()=>{config={...defaults,name:"MIDNIGHT GT",accent:"#ff3b62"
 $("generate").onclick=async()=>{
  const button=$("generate");
  if(!selectedImage){alert("Önce sol taraftan bir kadran fotoğrafı yükle.");return;}
- const yoldasTab=window.open("https://yoldas.io/kadran-atolyesi","_blank");
- button.disabled=true;button.textContent="✳ YENİ TASARIM OLUŞTURULUYOR...";$("jsonStatus").textContent="AI YENİ TASARIM HAZIRLIYOR...";
+ button.disabled=true;button.textContent="✳ AI TASARIMI HAZIRLIYOR...";
+ $("jsonStatus").textContent="GÖRSEL AI'YA GÖNDERİLİYOR...";
+ $("jsonStatus").style.color="#20c9ff";
+ let yoldasTab=null;
  try{
-  const form=new FormData();form.append("image",selectedImage);form.append("prompt",$("prompt").value.trim());
+  const form=new FormData();
+  form.append("image",selectedImage);
+  form.append("prompt",$("prompt").value.trim());
   const response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form});
-  const data=await response.json();
-  if(!response.ok||!data.success)throw new Error(data.detail||data.error||"AI isteği başarısız oldu.");
+  let data;
+  try{data=await response.json();}catch{throw new Error("AI sunucusu geçerli yanıt vermedi (HTTP "+response.status+").");}
+  if(!response.ok||!data.success)throw new Error(data.detail||data.error||("AI isteği başarısız oldu (HTTP "+response.status+")."));
   if(!data.config||typeof data.config!=="object")throw new Error("AI geçerli tasarım döndürmedi.");
-  config={...defaults,...data.config};json();render();
+  config={...defaults,...data.config};
+  json();render();
   const yoldasCode=JSON.stringify(makeYoldasCode(config),null,2);
-  try {
+  try{
    await navigator.clipboard.writeText(yoldasCode);
    $("jsonStatus").textContent="TASARIM HAZIR · YOLDAŞ KODU KOPYALANDI";
-  } catch {
-   $("jsonStatus").textContent="TASARIM HAZIR · KODU KOPYALA BUTONUYLA AL";
+  }catch{
+   $("jsonStatus").textContent="TASARIM HAZIR · JSON ALANI GÜNCELLENDİ";
   }
   $("jsonStatus").style.color="#39d99b";
-  if(yoldasTab){yoldasTab.location.href="https://yoldas.io/kadran-atolyesi#kadran-ai="+encodeURIComponent(yoldasCode);yoldasTab.focus();}
-  if(!yoldasTab){
-   $("jsonStatus").textContent="AÇILIR PENCERE ENGELLENDİ · YOLDAŞ'I AÇ VE KODU YAPIŞTIR";
-  }
- }catch(error){$("jsonStatus").textContent="AI HATASI";$("jsonStatus").style.color="#ff7474";alert("AI hatası: "+error.message);}
- finally{button.disabled=false;button.textContent="✳ TASARIMI AI İLE OLUŞTUR";}
+  yoldasTab=window.open("https://yoldas.io/kadran-atolyesi#kadran-ai="+encodeURIComponent(yoldasCode),"_blank");
+  if(yoldasTab){yoldasTab.focus();}
+  else{$("jsonStatus").textContent+=" · YOLDAŞ SEKME AÇILAMADI (POPUP ENGELİ)";}
+ }catch(error){
+  $("jsonStatus").textContent="AI HATASI: "+error.message;
+  $("jsonStatus").style.color="#ff7474";
+  alert("AI tasarımı oluşturulamadı:\n"+error.message);
+ }finally{
+  button.disabled=false;
+  button.textContent="✳ TASARIMI AI İLE OLUŞTUR";
+ }
 };
 $("imageInput").onchange=e=>showImage(e.target.files[0]);
 function showImage(file){if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){alert("Lütfen PNG, JPG veya WEBP görsel seç.");return;}if(file.size>5*1024*1024){alert("Görsel en fazla 5 MB olabilir.");return;}selectedImage=file;const url=URL.createObjectURL(file);$("referencePreview").innerHTML='<img src="'+url+'" alt="Yüklenen kadran referansı">';}
