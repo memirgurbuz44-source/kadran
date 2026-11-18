@@ -104,7 +104,7 @@ $("generate").onclick=async()=>{
    $("jsonStatus").textContent="TASARIM HAZIR · KODU KOPYALA BUTONUYLA AL";
   }
   $("jsonStatus").style.color="#39d99b";
-  if(yoldasTab){yoldasTab.focus();}
+  if(yoldasTab){yoldasTab.location.href="https://yoldas.io/kadran-atolyesi#kadran-ai="+encodeURIComponent(yoldasCode);yoldasTab.focus();}
   if(!yoldasTab){
    $("jsonStatus").textContent="AÇILIR PENCERE ENGELLENDİ · YOLDAŞ'I AÇ VE KODU YAPIŞTIR";
   }
