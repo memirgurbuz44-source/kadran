@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kadran AI Studio</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#"><span class="brand-icon">◉</span> KADRAN <b>AI STUDIO</b></a>
+  <div class="top-actions"><span class="status"><i></i> TASARIM MODU</span><button id="downloadTop" class="btn primary">JSON İNDİR ↓</button></div>
+</header>
+<main>
+  <section class="intro"><div><p class="eyebrow">DİJİTAL GÖSTERGE TASARIM ATÖLYESİ</p><h1>Hayalindeki kadranı<br><em>tasarla.</em></h1><p class="sub">Bir referans görsel yükle, kadranı düzenle ve JSON çıktını anında görüntüle.</p></div><div class="intro-mark">K<span>/</span>01</div></section>
+  <section class="workspace">
+    <aside class="panel upload-panel">
+      <div class="panel-head"><div><small>01 / REFERANS</small><h2>Görsel yükle</h2></div><span class="step">01</span></div>
+      <label class="dropzone" id="dropzone" for="imageInput">
+        <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp">
+        <span class="upload-symbol">＋</span><strong>Görseli buraya bırak</strong><span>veya dosya seç</span><small>PNG · JPG · WEBP</small>
+      </label>
+      <div class="reference-preview" id="referencePreview"><span>Henüz görsel seçilmedi</span></div>
+      <div class="hint">Yüklediğin görsel referans olarak gösterilir. Bu başlangıç sürümünde görsel otomatik olarak AI'a gönderilmez.</div>
+      <div class="panel-head controls-head"><div><small>02 / AYARLAR</small><h2>Kadran ayarları</h2></div></div>
+      <label class="field">Tasarım adı<input id="nameInput" value="NEON PERFORMANCE"></label>
+      <div class="two-fields">
+        <label class="field">Maksimum hız<select id="maxSpeed"><option>240</option><option>260</option><option>280</option><option>320</option><option>360</option></select></label>
+        <label class="field">Maksimum RPM<select id="maxRpm"><option>8000</option><option>7000</option><option>9000</option><option>10000</option></select></label>
+      </div>
+      <label class="field">Vurgu rengi<div class="color-row"><input id="accent" type="color" value="#20c9ff"><span id="colorValue">#20C9FF</span></div></label>
+      <label class="field">Tema<select id="theme"><option value="dark">Gece / Koyu</option><option value="light">Gündüz / Açık</option></select></label>
+      <button id="applySettings" class="btn full">AYARLARI JSON'A UYGULA</button>
+    </aside>
+    <section class="center-column">
+      <div class="panel preview-panel">
+        <div class="panel-head"><div><small>03 / CANLI EKRAN</small><h2>Kadran önizlemesi</h2></div><span class="live"><i></i> LIVE</span></div>
+        <div id="cluster" class="cluster">
+          <div class="cluster-top"><span>◈ <b>SPORT</b></span><span id="clusterName">NEON PERFORMANCE</span><span>● READY</span></div>
+          <svg id="dial" viewBox="0 0 760 390" role="img" aria-label="Dijital araç kadranı">
+            <defs><filter id="glow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+            <g id="leftTicks"></g><g id="rightTicks"></g>
+            <text x="190" y="210" class="dial-value" id="speedText">084</text><text x="190" y="242" class="dial-unit">KM/H</text>
+            <text x="570" y="210" class="dial-value" id="rpmText">3.2</text><text x="570" y="242" class="dial-unit">x1000 RPM</text>
+            <path id="speedArc" d="" class="arc"/><path id="rpmArc" d="" class="arc secondary"/>
+            <text x="380" y="145" text-anchor="middle" class="gear">D</text>
+            <text x="380" y="178" text-anchor="middle" class="gear-label">DRIVE</text>
+            <rect x="305" y="205" width="150" height="42" rx="8" class="info-box"/>
+            <text x="380" y="232" text-anchor="middle" class="info-text">23°C  ·  412 KM</text>
+            <text x="380" y="290" text-anchor="middle" class="bottom-info">P  R  <tspan class="active-gear">N</tspan>  D</text>
+          </svg>
+          <div class="cluster-bottom"><span>◉  BATTERY  87%</span><span>18:42</span><span>RANGE 412 KM</span></div>
+        </div>
+        <div class="preview-controls"><label>Hız <input id="speedSlider" type="range" min="0" max="240" value="84"><b id="speedLabel">84 km/h</b></label><label>Devir <input id="rpmSlider" type="range" min="0" max="8" step=".1" value="3.2"><b id="rpmLabel">3.2 x1000</b></label></div>
+      </div>
+      <div class="panel editor-panel">
+        <div class="panel-head"><div><small>04 / KOD</small><h2>JSON editörü</h2></div><div class="editor-actions"><span id="jsonStatus">JSON HAZIR</span><button id="copyJson" class="btn small">KOPYALA</button></div></div>
+        <textarea id="jsonEditor" spellcheck="false" aria-label="JSON editörü"></textarea>
+        <div class="editor-footer"><span>Değişiklikler canlı önizlemeye yansır.</span><button id="formatJson" class="text-btn">↻ JSON biçimlendir</button></div>
+      </div>
+    </section>
+    <aside class="panel ai-panel">
+      <div class="panel-head"><div><small>05 / YAPAY ZEKÂ</small><h2>AI tasarım asistanı</h2></div><span class="ai-star">✳</span></div>
+      <div class="ai-card"><div class="ai-orb">✳</div><h3>Fikrini tasarıma dönüştür.</h3><p>İstediğin kadranı tarif et. Asistan için hazır JSON taslağı oluşturalım.</p></div>
+      <label class="field">Nasıl bir kadran istiyorsun?<textarea id="prompt" class="prompt" placeholder="Örn. Kırmızı detaylı, yarış otomobili tarzında, büyük devir göstergeli..."></textarea></label>
+      <button id="generate" class="btn primary full">✳ TASLAK OLUŞTUR</button>
+      <p class="hint">Bilgi: Gerçek AI görsel analizi için daha sonra güvenli bir sunucu üzerinden AI API bağlantısı eklenmelidir. API anahtarını bu sayfaya yazma.</p>
+      <div class="ai-divider"></div><h3 class="mini-title">HIZLI İŞLEMLER</h3>
+      <button class="quick" id="reset">↺ Varsayılan tasarıma dön</button>
+      <button class="quick" id="sample">▧ Örnek JSON yükle</button>
+      <label class="quick file-load">↑ JSON dosyası içe aktar<input type="file" id="jsonInput" accept=".json,application/json"></label>
+      <div class="export-note"><b>Çıktı formatı</b><span>Standart JSON · .json</span></div>
+    </aside>
+  </section>
+  <footer> KADRAN AI STUDIO <span>•</span> DESIGN YOUR DRIVE <span class="foot-right">LOCAL PREVIEW BUILD 0.1</span></footer>
+</main>
+<script src="app.js"></script>
+</body></html>
