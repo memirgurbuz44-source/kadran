@@ -259,63 +259,86 @@ $("fixYoldasErrors").onclick=async()=>{
  }
 };
 
+function validateOwnAtelier(d){
+ const errors=[];
+ const allowed=new Set(["path","rect","circle","ellipse","line","arc","text","scale","group","repeat","gears","signal","bar","ring","clock","nav","media","speed_limit","ready","asset","window"]);
+ if(!d||typeof d!=="object"||Array.isArray(d))return ["JSON kök nesnesi geçersiz."];
+ if(d.yoldas_dial!==1)errors.push("yoldas_dial sürümü 1 olmalı.");
+ if(typeof d.name!=="string"||!d.name.trim())errors.push("name alanı eksik.");
+ if(!d.background||typeof d.background!=="object"||!d.background.night||!d.background.day)errors.push("background night/day renkleri eksik.");
+ if(!Array.isArray(d.parts))errors.push("parts dizisi eksik.");
+ else{
+  if(d.parts.length>400)errors.push("400 parça sınırı aşıldı.");
+  if(!d.parts.some(p=>p?.type==="gears"||(p?.type==="text"&&p.value==="gear")))errors.push("Vites göstergesi eksik.");
+  if(!d.parts.some(p=>p?.type==="signal"&&p.side==="left"))errors.push("Sol sinyal göstergesi eksik.");
+  if(!d.parts.some(p=>p?.type==="signal"&&p.side==="right"))errors.push("Sağ sinyal göstergesi eksik.");
+  if(!d.parts.some(p=>p?.type==="text"&&p.value==="speed"&&Number(p.size)>=120))errors.push("En az 120 boyutunda hız göstergesi eksik.");
+  let glow=0,motion=0,windows=0;
+  d.parts.forEach((p,i)=>{
+   if(!p||typeof p!=="object"||!allowed.has(p.type))errors.push("parts["+i+"] desteklenmeyen tür.");
+   if(p?.glow)glow++;if(p?.motion)motion++;if(p?.type==="window")windows++;
+   if(p?.type==="text"&&(!Number.isFinite(Number(p.size))||Number(p.size)<12))errors.push("parts["+i+"] yazı boyutu 12'den küçük.");
+   if(p?.type==="signal"&&!["left","right"].includes(p.side))errors.push("parts["+i+"] signal.side geçersiz.");
+  });
+  if(glow>12)errors.push("Glow bütçesi 12 sınırını aşıyor.");
+  if(motion>40)errors.push("Hareket bütçesi 40 sınırını aşıyor.");
+  if(windows>6)errors.push("Pencere bütçesi 6 sınırını aşıyor.");
+ }
+ if(new Blob([JSON.stringify(d)]).size>256*1024)errors.push("JSON 256 KB sınırını aşıyor.");
+ return [...new Set(errors)];
+}
+async function askKadranAI(imageFile,promptText){
+ const form=new FormData();form.append("image",imageFile);form.append("prompt",promptText);
+ const controller=new AbortController();const timeoutId=setTimeout(()=>controller.abort(),90000);
+ let response,raw,data;
+ try{response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form,signal:controller.signal});}
+ catch(e){if(e.name==="AbortError")throw new Error("AI 90 saniye içinde yanıt vermedi.");throw new Error("AI sunucusuna bağlanılamadı: "+e.message);}
+ finally{clearTimeout(timeoutId);}
+ raw=await response.text();
+ try{data=parseJsonWithControlRepair(raw);}catch(e){throw new Error("AI yanıtı okunamadı: "+e.message);}
+ if(!response.ok||!data.success)throw new Error(data.detail||data.error||("AI isteği başarısız (HTTP "+response.status+")."));
+ if(!data.config||typeof data.config!=="object")throw new Error("AI geçerli config döndürmedi.");
+ return data.config;
+}
 $("generate").onclick=async()=>{
  const button=$("generate");
- window.__kadranGenerationReady=false;
- window.__kadranGenerationError="";
- if(!selectedImage){window.__kadranGenerationError="Önce sol taraftan bir kadran fotoğrafı yükle.";alert(window.__kadranGenerationError);return;}
- button.disabled=true;button.textContent="✳ AI TASARIMI HAZIRLIYOR...";
- $("jsonStatus").textContent="GÖRSEL AI'YA GÖNDERİLİYOR...";
- $("jsonStatus").style.color="#20c9ff";
- 
+ window.__kadranGenerationReady=false;window.__kadranGenerationError="";
+ if(!selectedImage){window.__kadranGenerationError="Önce bir kadran görseli yükle.";alert(window.__kadranGenerationError);return;}
+ button.disabled=true;
+ const originalPrompt=$("prompt").value.trim();
  try{
-  const form=new FormData();
-  form.append("image",selectedImage);
-  const visionBrief="GÖREV: Yüklenen referans görselini dikkatle incele ve görselin kompozisyonuna sadık, uygulanabilir bir dijital araç gösterge paneli tasarımı için config üret. Önce görselin genel siluetini (oval/dairesel/yatay), ekran bölgelerinin konumlarını, ana/ikincil göstergeleri, yazı tiplerinin karakterini, renk paletini, kontrastı, ışık efektlerini ve boşluk oranlarını analiz et. Sonuçta yalnızca desteklenen config alanlarını kullan: name, maxSpeed, maxRpm, theme, accent, secondary, speed, rpm, units, layout, gaugeStyle, centerText, subtitle. layout yalnızca dual-dial, single-dial, horizontal veya minimal; gaugeStyle yalnızca neon, solid veya minimal olabilir. accent ve secondary #RRGGBB biçiminde olsun. maxSpeed 80-400, maxRpm 3000-12000 aralığında; speed ve rpm bu sınırları aşmasın. Fotoğrafta olmayan iki yuvarlak göstergeyi, ekstra ikonları veya dekoratif parçaları kendiliğinden ekleme. Görselde oval bir panel varsa renkleri ve bilgi hiyerarşisini koruyarak en yakın yatay/dual-dial yerleşimini seç. Metinleri kısa tut. Kullanıcı isteği: ";
-  form.append("prompt",visionBrief+$("prompt").value.trim());
-  $("jsonStatus").textContent="AI GÖRSELİ İNCELİYOR...";
-  const controller=new AbortController();
-  const timeoutId=setTimeout(()=>controller.abort(),90000);
-  let response;
-  try{response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form,signal:controller.signal});}
-  catch(fetchError){if(fetchError.name==="AbortError")throw new Error("AI sunucusu 90 saniye içinde yanıt vermedi. Worker kontrol edilmeli.");throw new Error("AI sunucusuna bağlanılamadı: "+fetchError.message);}
-  finally{clearTimeout(timeoutId);}
-  const rawResponse=await response.text();
-  let data;
-  try{data=parseJsonWithControlRepair(rawResponse);}catch(parseError){
-   throw new Error("AI sunucusunun yanıtı okunamadı (HTTP "+response.status+"). "+parseError.message);
+  let nextConfig;
+  $("jsonStatus").textContent="AI GÖRSELİ ANALİZ EDİYOR...";
+  const visionPrompt="Yüklenen kadran referansını analiz et ve yalnızca şu config alanlarını döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. layout: dual-dial/single-dial/horizontal/minimal. gaugeStyle: neon/solid/minimal. Renkler #RRGGBB. maxSpeed 80-400, maxRpm 3000-12000. Görselde olmayan öğeler uydurma. Türkçe kullanıcı isteği: "+originalPrompt;
+  nextConfig=await askKadranAI(selectedImage,visionPrompt);
+  let finalDial=null,errors=[];
+  for(let attempt=1;attempt<=6;attempt++){
+   config={...defaults,...nextConfig};
+   finalDial=makeYoldasCode(config);
+   errors=validateOwnAtelier(finalDial);
+   if(!errors.length)break;
+   $("jsonStatus").textContent="ATÖLYE DENETİMİ: "+errors.length+" HATA · AI DÜZELTME "+attempt+"/6";
+   const repairPrompt="Bu tasarımı yeni baştan yapma. Aşağıdaki mevcut config'i ve Yoldaş kadran JSON'unu, bizim Kadran Atölyesi doğrulama raporundaki hataları giderecek şekilde düzelt. Yalnızca desteklenen config alanlarını döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. JSON dışında açıklama verme. İlk kullanıcı isteğini ve görsel tasarımın görünüşünü koru.\\n\\nİLK İSTEK:\\n"+originalPrompt+"\\n\\nHATA RAPORU:\\n"+errors.join("\\n")+"\\n\\nMEVCUT CONFIG:\\n"+JSON.stringify(config)+"\\n\\nOLUŞAN YOLDAŞ JSON:\\n"+JSON.stringify(finalDial);
+   nextConfig=await askKadranAI(selectedImage,repairPrompt);
   }
-  if(!response.ok||!data.success)throw new Error(data.detail||data.error||("AI isteği başarısız oldu (HTTP "+response.status+")."));
-  if(!data.config||typeof data.config!=="object")throw new Error("AI geçerli tasarım döndürmedi.");
-  config={...defaults,...data.config};
+  config={...defaults,...nextConfig};
+  finalDial=makeYoldasCode(config);
+  errors=validateOwnAtelier(finalDial);
+  if(errors.length)throw new Error("6 otomatik düzeltme turundan sonra kalan hatalar: "+errors.join(" | "));
+  const finalJson=JSON.stringify(finalDial,null,2);
+  localStorage.setItem("kadran_atolye_json",finalJson);
+  localStorage.setItem("kadran_atolye_source","kadran-ai");
+  localStorage.setItem("kadran_atolye_name",config.name||"AI Kadran");
   json();render();
-  $("jsonStatus").textContent="YOLDAŞ UYUMLULUĞU DENETLENİYOR...";
-  let checked=validateAndRepairYoldas(makeYoldasCode(config));
-  // Use the repaired, validated Yoldaş document as the final export.
-  const yoldasCode=JSON.stringify(checked.doc,null,2);
-  localStorage.setItem("kadran_atolye_json",yoldasCode);
-  $("jsonEditor").value=JSON.stringify(config,null,2);
-  try{
-   await navigator.clipboard.writeText(yoldasCode);
-   $("jsonStatus").textContent="✓ İLK ŞEMA KONTROLÜ TAMAM · GERÇEK YOLDAŞ TESTİ BEKLENİYOR · "+checked.passes+" TUR · CTRL+V";
-  }catch{
-   $("jsonStatus").textContent="✓ İLK ŞEMA KONTROLÜ TAMAM · GERÇEK YOLDAŞ TESTİ BEKLENİYOR · JSON İNDİR";
-  }
+  $("jsonStatus").textContent="✓ TASARIM HATASIZ · KADRAN ATÖLYESİ AÇILIYOR";
   $("jsonStatus").style.color="#39d99b";
-  
-  window.__lastYoldasDial=checked.doc;
-   window.__kadranGenerationReady=true;
-   window.__kadranGenerationError="";
+  window.__lastYoldasDial=finalDial;window.__kadranGenerationReady=true;window.__kadranGenerationError="";
+  setTimeout(()=>{window.location.href="atolye.html";},350);
  }catch(error){
-  window.__kadranGenerationReady=false;
-  window.__kadranGenerationError=error.message;
-  $("jsonStatus").textContent="AI HATASI: "+error.message;
-  $("jsonStatus").style.color="#ff7474";
-  alert("AI tasarımı oluşturulamadı:\n"+error.message);
- }finally{
-  button.disabled=false;
-  button.textContent="✳ TASARIMI AI İLE OLUŞTUR";
- }
+  window.__kadranGenerationReady=false;window.__kadranGenerationError=error.message;
+  $("jsonStatus").textContent="AI / ATÖLYE HATASI: "+error.message;$("jsonStatus").style.color="#ff7474";
+  alert("Tasarım tamamlanamadı:\n"+error.message);
+ }finally{button.disabled=false;button.textContent="✳ TASARIMI AI İLE OLUŞTUR";}
 };
 $("imageInput").onchange=e=>showImage(e.target.files[0]);
 function showImage(file){if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){alert("Lütfen PNG, JPG veya WEBP görsel seç.");return;}if(file.size>5*1024*1024){alert("Görsel en fazla 5 MB olabilir.");return;}selectedImage=file;const url=URL.createObjectURL(file);$("referencePreview").innerHTML='<img src="'+url+'" alt="Yüklenen kadran referansı">';}
