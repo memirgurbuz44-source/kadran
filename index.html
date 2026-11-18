@@ -19,7 +19,7 @@
         <span class="upload-symbol">＋</span><strong>Görseli buraya bırak</strong><span>veya dosya seç</span><small>PNG · JPG · WEBP</small>
       </label>
       <div class="reference-preview" id="referencePreview"><span>Henüz görsel seçilmedi</span></div>
-      <div class="hint">Yüklediğin görsel AI tarafından analiz edilir. Oluşturulan Yoldaş uyumlu JSON doğrudan kendi Kadran Atölyemizde açılır.</div>
+      <div class="hint">Yapay zekâ görselini analiz eder; tasarımı kendi Kadran Atölyemizde denetler ve hataları otomatik düzeltir.</div>
       <div class="panel-head controls-head"><div><small>02 / AYARLAR</small><h2>Kadran ayarları</h2></div></div>
       <label class="field">Tasarım adı<input id="nameInput" value="NEON PERFORMANCE"></label>
       <div class="two-fields">
@@ -71,8 +71,8 @@
       <div class="ai-card"><div class="ai-orb">✳</div><h3>Fikrini tasarıma dönüştür.</h3><p>Fotoğrafını yükle, Türkçe tarifini yaz. Yapay zekâ görseli analiz edip JSON tasarımını oluştursun.</p></div>
       <label class="field">Nasıl bir kadran istiyorsun?<textarea id="prompt" class="prompt" placeholder="Örn. Kırmızı detaylı, yarış otomobili tarzında, büyük devir göstergeli..."></textarea></label>
       <button id="generate" class="btn primary full">✳ TASARIMI AI İLE OLUŞTUR</button>
-      <button class="btn full" id="fixYoldasErrors" type="button">↻ YOLDAŞ HATALARINI AL VE DÜZELT</button>
-      <p class="hint">Workers AI görseli analiz eder. Gerçek Yoldaş test ve otomatik düzeltme için KadranOtomasyon yardımcısı açık olmalı. Atölye yalnızca Yoldaş hatasız onaylayınca açılır.</p>
+      
+      <p class="hint">Yapay zekâ doğrudan bu uygulamaya bağlıdır. Tasarım kendi Kadran Atölyemizde kontrol edilir; hata varsa AI en fazla 6 tur otomatik düzeltme yapar. Harici Yoldaş sitesi veya yardımcı uygulama gerekmez.</p>
       <div class="ai-divider"></div><h3 class="mini-title">HIZLI İŞLEMLER</h3>
       <button class="quick" id="reset">↺ Varsayılan tasarıma dön</button>
       <button class="quick" id="sample">▧ Örnek JSON yükle</button>
