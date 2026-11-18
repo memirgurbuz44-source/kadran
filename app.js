@@ -75,14 +75,31 @@ function render(){
  $("speedSlider").max=max;$("speedSlider").value=clamp(config.speed,0,max);$("speedLabel").textContent=clamp(config.speed,0,max)+" km/h";
  $("rpmSlider").max=rpmMax/1000;$("rpmSlider").value=clamp(config.rpm,0,rpmMax/1000);$("rpmLabel").textContent=Number(config.rpm||0).toFixed(1)+" x1000";
  $("nameInput").value=config.name||"";$("maxSpeed").value=String(max);$("maxRpm").value=String(rpmMax);
- $("accent").value=safeColor(config.accent,defaults.accent);$("colorValue").textContent=safeColor(config.accent,defaults.accent).toUpperCase();$("theme").value=config.theme||"dark";
+ $("accent").value=safeColor(config.accent,defaults.accent);$("colorValue").textContent=safeColor(config.accent,defaults.accent).toUpperCase();$("secondary").value=safeColor(config.secondary,defaults.secondary);$("secondaryValue").textContent=safeColor(config.secondary,defaults.secondary).toUpperCase();$("theme").value=config.theme||"dark";$("layout").value=config.layout||"dual-dial";$("gaugeStyle").value=config.gaugeStyle||"neon";$("centerText").value=config.centerText||"D";$("subtitle").value=config.subtitle||"DRIVE";
 }
 function applyEditor(){try{const next=JSON.parse($("jsonEditor").value);if(!next||typeof next!=="object"||Array.isArray(next))throw Error("JSON bir nesne olmalı");config={...defaults,...next};render();$("jsonStatus").textContent="GEÇERLİ JSON";$("jsonStatus").style.color="#39d99b";}catch(e){$("jsonStatus").textContent="JSON HATASI";$("jsonStatus").style.color="#ff7474";}}
 let timer;$("jsonEditor").addEventListener("input",()=>{clearTimeout(timer);timer=setTimeout(applyEditor,250);});
-$("applySettings").onclick=()=>{config={...config,name:$("nameInput").value,maxSpeed:+$("maxSpeed").value,maxRpm:+$("maxRpm").value,accent:$("accent").value,theme:$("theme").value};json();render();};
+$("applySettings").onclick=()=>commitConfig({...config,name:$("nameInput").value,maxSpeed:+$("maxSpeed").value,maxRpm:+$("maxRpm").value,accent:$("accent").value,secondary:$("secondary").value,theme:$("theme").value,layout:$("layout").value,gaugeStyle:$("gaugeStyle").value,centerText:$("centerText").value,subtitle:$("subtitle").value});
 $("accent").oninput=()=>{$("colorValue").textContent=$("accent").value.toUpperCase();};
-$("speedSlider").oninput=e=>{config.speed=+e.target.value;json();render();};
-$("rpmSlider").oninput=e=>{config.rpm=+e.target.value;json();render();};
+$("speedSlider").oninput=e=>{config.speed=+e.target.value;json();render();try{localStorage.setItem("kadran-ai-autosave",JSON.stringify(config));}catch{}};
+$("rpmSlider").oninput=e=>{config.rpm=+e.target.value;json();render();try{localStorage.setItem("kadran-ai-autosave",JSON.stringify(config));}catch{}};
+
+const undoStack=[],redoStack=[];
+function commitConfig(next){undoStack.push(JSON.stringify(config));if(undoStack.length>50)undoStack.shift();redoStack.length=0;config={...defaults,...next};json();render();try{localStorage.setItem("kadran-ai-autosave",JSON.stringify(config));}catch{}}
+function undoConfig(){if(!undoStack.length)return;redoStack.push(JSON.stringify(config));config={...defaults,...JSON.parse(undoStack.pop())};json();render();}
+function redoConfig(){if(!redoStack.length)return;undoStack.push(JSON.stringify(config));config={...defaults,...JSON.parse(redoStack.pop())};json();render();}
+$("undo").onclick=undoConfig;$("redo").onclick=redoConfig;
+$("secondary").oninput=()=>{$("secondaryValue").textContent=$("secondary").value.toUpperCase();};
+$("saveDesign").onclick=()=>{try{localStorage.setItem("kadran-ai-saved",JSON.stringify(config));alert("Tasarım bu tarayıcıya kaydedildi.");}catch{alert("Tarayıcı kaydı kullanılamıyor.");}};
+$("loadDesign").onclick=()=>{try{const v=localStorage.getItem("kadran-ai-saved");if(!v){alert("Kayıtlı tasarım bulunamadı.");return;}commitConfig(JSON.parse(v));}catch{alert("Kayıt okunamadı.");}};
+const paletteSet=[["#20c9ff","#8b5cf6"],["#ff3158","#ff9b42"],["#b7f34a","#20d6a1"],["#83e8ff","#477bff"],["#f5c451","#f08a45"],["#bd82ff","#ff63bd"],["#ff812e","#ffe05b"]];
+$("randomize").onclick=()=>{const p=paletteSet[Math.floor(Math.random()*paletteSet.length)],ls=["dual-dial","single-dial","horizontal","minimal"],gs=["neon","solid","minimal"];commitConfig({...config,name:"CUSTOM "+Math.floor(100+Math.random()*900),accent:p[0],secondary:p[1],layout:ls[Math.floor(Math.random()*ls.length)],gaugeStyle:gs[Math.floor(Math.random()*gs.length)]});};
+$("validate").onclick=()=>{const errors=[];if(!/^#[0-9a-f]{6}$/i.test(config.accent||""))errors.push("Ana renk geçersiz");if(!/^#[0-9a-f]{6}$/i.test(config.secondary||""))errors.push("İkincil renk geçersiz");if(Number(config.maxSpeed)<80||Number(config.maxSpeed)>400)errors.push("Maksimum hız 80-400 olmalı");if(Number(config.maxRpm)<3000||Number(config.maxRpm)>12000)errors.push("Maksimum RPM 3000-12000 olmalı");if(!["dual-dial","single-dial","horizontal","minimal"].includes(config.layout))errors.push("Yerleşim geçersiz");if(!["neon","solid","minimal"].includes(config.gaugeStyle))errors.push("Gösterge stili geçersiz");alert(errors.length?"TASARIM HATALARI\\n\\n"+errors.join("\\n"):"TASARIM KONTROLÜ BAŞARILI");};
+function blobDownload(blob,name){const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1200);}
+function svgExport(){const node=$("dial").cloneNode(true);node.setAttribute("xmlns","http://www.w3.org/2000/svg");node.setAttribute("width","1520");node.setAttribute("height","780");node.style.setProperty("--accent",config.accent);node.style.setProperty("--secondary",config.secondary);const st=document.createElementNS("http://www.w3.org/2000/svg","style");st.textContent=".dial-value{font:54px monospace;fill:#effaff;text-anchor:middle}.dial-unit{font:11px monospace;fill:#8ba7bd;text-anchor:middle}.gear{font:36px monospace;fill:var(--accent)}.gear-label{font:9px monospace;fill:#8ba7bd}.info-box{fill:#0d1b29;stroke:#2b536d}.info-text{font:10px monospace;fill:#b8d9e9}.bottom-info{font:12px monospace;fill:#6d8296}.active-gear{fill:var(--accent)}";node.insertBefore(st,node.firstChild);blobDownload(new Blob([new XMLSerializer().serializeToString(node)],{type:"image/svg+xml"}),(config.name||"kadran")+".svg");}
+function pngExport(){const node=$("dial").cloneNode(true);node.setAttribute("xmlns","http://www.w3.org/2000/svg");node.setAttribute("width","1520");node.setAttribute("height","780");node.style.setProperty("--accent",config.accent);node.style.setProperty("--secondary",config.secondary);const st=document.createElementNS("http://www.w3.org/2000/svg","style");st.textContent=".dial-value{font:54px monospace;fill:#effaff;text-anchor:middle}.dial-unit{font:11px monospace;fill:#8ba7bd;text-anchor:middle}.gear{font:36px monospace;fill:var(--accent)}.gear-label{font:9px monospace;fill:#8ba7bd}.info-box{fill:#0d1b29;stroke:#2b536d}.info-text{font:10px monospace;fill:#b8d9e9}.bottom-info{font:12px monospace;fill:#6d8296}.active-gear{fill:var(--accent)}";node.insertBefore(st,node.firstChild);const u=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(node)],{type:"image/svg+xml"})),img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=1520;c.height=780;const x=c.getContext("2d");x.fillStyle=config.theme==="light"?"#eef3f7":"#080e18";x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{if(b)blobDownload(b,(config.name||"kadran")+".png");URL.revokeObjectURL(u);},"image/png");};img.onerror=()=>{URL.revokeObjectURL(u);alert("PNG oluşturulamadı.");};img.src=u;}
+$("exportSvg").onclick=svgExport;$("exportPng").onclick=pngExport;
+try{const old=localStorage.getItem("kadran-ai-autosave");if(old)config={...defaults,...JSON.parse(old)};}catch{}
 function makeYoldasCode(c){
  const accent=safeColor(c.accent,"#20C9FF"),secondary=safeColor(c.secondary,"#8B5CF6");
  const title=String(c.name||"DIGITAL COCKPIT").replace(/[\\r\\n]+/g," ").slice(0,24);
@@ -119,7 +136,7 @@ function download(){try{applyEditor();const blob=new Blob([JSON.stringify(config
 $("downloadTop").onclick=download;
 $("copyJson").onclick=async()=>{try{await navigator.clipboard.writeText($("jsonEditor").value);$("copyJson").textContent="KOPYALANDI";setTimeout(()=>$("copyJson").textContent="KOPYALA",1400);}catch{$("jsonEditor").select();document.execCommand("copy");}};
 $("formatJson").onclick=()=>{try{$("jsonEditor").value=JSON.stringify(JSON.parse($("jsonEditor").value),null,2);applyEditor();}catch{$("jsonStatus").textContent="JSON HATASI";}};
-$("reset").onclick=()=>{config={...defaults};json();render();};
+$("reset").onclick=()=>commitConfig({...defaults});
 $("sample").onclick=()=>{config={...defaults,name:"MIDNIGHT GT",accent:"#ff3b62",secondary:"#a78bfa",maxSpeed:320,maxRpm:9000,speed:126,rpm:4.8,layout:"single-dial",gaugeStyle:"solid"};json();render();};
 $("generate").onclick=async()=>{
  const button=$("generate");
