@@ -56,27 +56,31 @@ $("rpmSlider").oninput=e=>{config.rpm=+e.target.value;json();render();};
 function makeYoldasCode(c){
  const accent=safeColor(c.accent,"#20c9ff");
  const secondary=safeColor(c.secondary,"#8b5cf6");
- const night="#070B14",day="#F0F3F7",light=c.theme==="light";
+ const night="#070B14",day="#F0F3F7";
+ const textPaint={night:"#F4F7FB",day:"#172033"};
+ const dimPaint={night:"#AAB8CC",day:"#526176"};
+ const trackPaint={night:"#263448",day:"#D5DDE8"};
+ const title=String(c.name||"YOLDAS DIGITAL").replace(/[\\r\\n]/g," ").slice(0,24);
+ const subtitle=String(c.subtitle||"READY").replace(/[\\r\\n]/g," ").slice(0,18);
  const parts=[
-  {type:"rect",x:0,y:0,width:1920,height:720,fill:light?day:night},
-  {type:"rect",x:0,y:0,width:1920,height:10,fill:accent,opacity:0.9},
-  {type:"arc",center:[960,360],radius:275,start:-135,sweep:270,stroke:{paint:accent,width:8,cap:"round"},opacity:0.8},
-  {type:"arc",center:[960,360],radius:250,start:-135,sweep:270,stroke:{paint:secondary,width:2},opacity:0.45},
-  {type:"text",text:String(c.name||"YOLDAS DIGITAL").slice(0,24),x:960,y:105,align:"center",size:28,weight:700,spacing:0.16,fill:light?"#263244":"#AAB8CC"},
-  {type:"ring",center:[470,360],radius:112,width:13,start:-135,sweep:270,value:"battery",from:[0,100],color:accent,track:light?"#D5DDE8":"#202C3D"},
-  {type:"text",word:"battery",x:470,y:345,align:"center",size:24,fill:light?"#263244":"#DDE7F4"},
-  {type:"text",value:"battery",x:470,y:395,align:"center",size:38,weight:700,fill:light?"#182333":"#FFFFFF"},
-  {type:"ring",center:[1450,360],radius:112,width:13,start:-135,sweep:270,value:"power",from:[0,250],color:secondary,track:light?"#D5DDE8":"#202C3D"},
-  {type:"text",word:"power",x:1450,y:345,align:"center",size:24,fill:light?"#263244":"#DDE7F4"},
-  {type:"text",value:"power",x:1450,y:395,align:"center",size:38,weight:700,fill:light?"#182333":"#FFFFFF"},
-  {type:"text",value:"speed",x:960,y:365,align:"center",valign:"middle",size:176,weight:800,font:"wide",fill:light?"#111827":"#F4F7FB",unit:{size:30}},
-  {type:"text",text:"KM/H",x:960,y:455,align:"center",size:26,weight:600,spacing:0.2,fill:accent},
-  {type:"gears",x:880,y:555,width:160,size:34,active_size:40,color:light?"#687589":"#78879B",active_color:accent},
-  {type:"signal",side:"left",x:360,y:315,size:44,color:"$signal"},
-  {type:"signal",side:"right",x:1516,y:315,size:44,color:"$signal"},
-  {type:"text",text:("DRIVE  •  "+String(c.subtitle||"READY")).slice(0,24),x:960,y:635,align:"center",size:24,weight:600,fill:light?"#526176":"#AAB8CC"}
+  {type:"rect",x:0,y:0,width:1920,height:12,fill:accent,opacity:0.9},
+  {type:"arc",center:[960,360],radius:300,start:-135,sweep:270,stroke:{paint:accent,width:5,cap:"round"},opacity:0.35},
+  {type:"arc",center:[960,360],radius:280,start:-135,sweep:270,stroke:{paint:secondary,width:2},opacity:0.3},
+  {type:"text",text:title,x:960,y:100,align:"center",size:26,weight:700,spacing:0.16,fill:dimPaint},
+  {type:"ring",center:[380,350],radius:104,width:12,start:-135,sweep:270,value:"battery",from:[0,100],color:{value:"battery",steps:[[20,"$warning"]],color:accent},track:trackPaint},
+  {type:"text",value:"battery",x:380,y:350,align:"center",size:42,weight:600,fill:textPaint},
+  {type:"text",word:"battery",x:380,y:450,align:"center",size:18,weight:600,fill:dimPaint},
+  {type:"ring",center:[1540,350],radius:104,width:12,start:-135,sweep:270,value:"power",from:[0,250],color:secondary,track:trackPaint},
+  {type:"text",value:"power",x:1540,y:350,align:"center",size:42,weight:600,fill:textPaint},
+  {type:"text",word:"power",x:1540,y:450,align:"center",size:18,weight:600,fill:dimPaint},
+  {type:"text",value:"speed",x:960,y:350,align:"center",valign:"middle",size:184,weight:700,font:"tech",fill:textPaint},
+  {type:"text",unit_of:"speed",uppercase:true,x:960,y:455,align:"center",size:24,weight:600,spacing:0.2,fill:accent},
+  {type:"gears",x:860,y:520,width:200,size:26,active_size:36,active_weight:700,color:dimPaint,active_color:accent},
+  {type:"signal",side:"left",x:650,y:260,size:52,color:"$signal"},
+  {type:"signal",side:"right",x:1218,y:260,size:52,color:"$signal"},
+  {type:"text",text:subtitle,x:960,y:640,align:"center",size:22,weight:600,spacing:0.12,fill:dimPaint}
  ];
- return {yoldas_dial:1,name:String(c.name||"Yoldas Tasarimi").slice(0,40),description:"Kadran AI Studio tarafindan olusturuldu.",background:{night,day},parts};
+ return {yoldas_dial:1,name:String(c.name||"Yoldas Tasarimi").replace(/[\\r\\n]/g," ").slice(0,40),description:"Kadran AI Studio tarafindan olusturuldu.",background:{night,day},parts};
 }
 function download(){try{applyEditor();const blob=new Blob([JSON.stringify(config,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(config.name||"kadran").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".json";a.click();URL.revokeObjectURL(a.href);}catch{}}
 $("downloadTop").onclick=download;
