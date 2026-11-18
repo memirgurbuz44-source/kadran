@@ -84,44 +84,36 @@ $("accent").oninput=()=>{$("colorValue").textContent=$("accent").value.toUpperCa
 $("speedSlider").oninput=e=>{config.speed=+e.target.value;json();render();};
 $("rpmSlider").oninput=e=>{config.rpm=+e.target.value;json();render();};
 function makeYoldasCode(c){
- const accent=safeColor(c.accent,"#20C9FF");
- const secondary=safeColor(c.secondary,"#8B5CF6");
- const night="#080D12",day="#EEF2F5";
- const bright={night:"#F5F7FA",day:"#17212B"};
- const muted={night:"#AAB5C0",day:"#526170"};
- const darkGlass={night:"#101820",day:"#DCE3E9"};
+ const accent=safeColor(c.accent,"#20C9FF"),secondary=safeColor(c.secondary,"#8B5CF6");
  const title=String(c.name||"DIGITAL COCKPIT").replace(/[\\r\\n]+/g," ").slice(0,40);
+ const ink={night:"#F4F7FA",day:"#17212B"},dim={night:"#AAB6C2",day:"#526170"};
+ const track={night:"#FFFFFF20",day:"#10151C20"};
  const parts=[
-  {type:"ellipse",center:[960,360],rx:930,ry:320,fill:{radial:{center:[960,340],radius:1000,stops:[[0,"#26313A"],[0.72,"#11191F"],[1,"#05080B"]]}},stroke:{paint:"#46515B",width:8}},
-  {type:"ellipse",center:[960,360],rx:865,ry:270,fill:darkGlass,stroke:{paint:"#35414B",width:5}},
-  {type:"ellipse",center:[960,360],rx:820,ry:242,fill:{radial:{center:[960,330],radius:850,stops:[[0,"#151F28"],[1,"#080D12"]]}},stroke:{paint:"#293640",width:3}},
-  {type:"arc",center:[960,360],radius:790,start:-166,sweep:332,stroke:{paint:secondary,width:5,cap:"round"},opacity:0.38},
-  {type:"text",text:title,x:960,y:65,align:"center",size:22,weight:700,spacing:0.16,fill:muted},
-  {type:"ready",x:850,y:88,width:220,height:48},
-  {type:"signal",side:"left",x:755,y:105,size:54,color:"$signal"},
-  {type:"signal",side:"right",x:1111,y:105,size:54,color:"$signal"},
-  {type:"ellipse",center:[455,365],rx:215,ry:205,fill:"#0B1218",stroke:{paint:"#26343E",width:5}},
-  {type:"arc",center:[455,365],radius:174,start:-135,sweep:270,stroke:{paint:"#35434C",width:16,cap:"round"}},
-  {type:"scale",shape:"arc",center:[455,365],radius:174,start:-135,sweep:270,range:[0,8],major:2,minor:1,major_length:18,minor_length:9,width:3,color:{night:"#DDE5EA",day:"#26323D"},numbers:{size:22,offset:34,color:{night:"#EAF0F4",day:"#26323D"},font:"tech"}},
-  {type:"arc",center:[455,365],radius:174,start:-135,sweep:270,stroke:{paint:accent,width:5,cap:"round"},opacity:0.8},
-  {type:"text",text:"RPM",x:455,y:390,align:"center",size:22,weight:700,spacing:0.12,fill:muted},
-  {type:"text",value:"rpm",x:455,y:440,align:"center",size:34,weight:600,font:"tech",fill:bright},
-  {type:"ellipse",center:[960,360],rx:255,ry:205,fill:"#0A1118",stroke:{paint:secondary,width:7},glow:{color:secondary,size:18,strength:0.45}},
-  {type:"ellipse",center:[960,360],rx:235,ry:185,fill:"#101923",stroke:{paint:"#364653",width:3}},
-  {type:"text",value:"speed",x:960,y:350,align:"center",valign:"middle",size:190,weight:700,font:"tech",fill:bright},
+  {type:"ellipse",center:[960,360],rx:900,ry:300,fill:{radial:{center:[960,330],radius:980,stops:[[0,"#17232E"],[0.78,"#0A1118"],[1,"#030609"]]}},stroke:{paint:"#354553",width:8}},
+  {type:"ellipse",center:[960,360],rx:865,ry:267,fill:"#080E14",stroke:{paint:secondary,width:3},glow:{color:secondary,size:12,strength:0.35}},
+  {type:"arc",center:[960,360],radius:820,start:-115,sweep:230,stroke:{paint:accent,width:3,cap:"round"}},
+  {type:"text",text:title,x:960,y:88,align:"center",size:24,weight:700,spacing:0.18,fill:dim},
+  {type:"ready",x:900,y:112,width:120,height:34},
+  {type:"signal",side:"left",x:360,y:292,size:56,color:"$signal"},
+  {type:"signal",side:"right",x:1504,y:292,size:56,color:"$signal"},
+  {type:"circle",center:[420,360],radius:150,fill:"#0B141C",stroke:{paint:"#30404D",width:4}},
+  {type:"ring",center:[420,360],radius:118,width:12,start:-135,sweep:270,value:"battery",from:[0,100],color:{value:"battery",steps:[[20,"$warning"]],color:accent},track:track},
+  {type:"text",value:"battery",x:420,y:360,align:"center",size:48,weight:500,font:"tech",fill:ink},
+  {type:"text",word:"battery",x:420,y:438,align:"center",size:18,weight:600,spacing:0.16,fill:dim},
+  {type:"circle",center:[1500,360],radius:150,fill:"#0B141C",stroke:{paint:"#30404D",width:4}},
+  {type:"ring",center:[1500,360],radius:118,width:12,start:-135,sweep:270,value:"range",from:[0,600],color:secondary,track:track},
+  {type:"text",value:"range",unit:{size:20},x:1500,y:360,align:"center",size:54,weight:500,font:"tech",fill:ink},
+  {type:"text",word:"range",x:1500,y:438,align:"center",size:18,weight:600,spacing:0.16,fill:dim},
+  {type:"circle",center:[960,350],radius:248,fill:"#0A121A",stroke:{paint:"#354653",width:5}},
+  {type:"arc",center:[960,350],radius:225,start:-140,sweep:280,stroke:{paint:track,width:10,cap:"round"}},
+  {type:"arc",center:[960,350],radius:225,start:-140,sweep:280,stroke:{paint:accent,width:5,cap:"round"},glow:{color:accent,size:14,strength:0.5}},
+  {type:"text",value:"speed",x:960,y:335,align:"center",valign:"middle",size:190,weight:650,font:"tech",fill:ink},
   {type:"text",unit_of:"speed",uppercase:true,x:960,y:455,align:"center",size:24,weight:700,spacing:0.2,fill:accent},
-  {type:"text",value:"gear",x:960,y:535,align:"center",size:48,weight:700,font:"tech",fill:bright},
-  {type:"text",value:"odometer",x:960,y:605,align:"center",size:22,weight:500,font:"tech",fill:muted},
-  {type:"ellipse",center:[1470,365],rx:170,ry:205,fill:"#0B1218",stroke:{paint:"#26343E",width:5}},
-  {type:"arc",center:[1470,365],radius:145,start:-135,sweep:270,stroke:{paint:"#35434C",width:13,cap:"round"}},
-  {type:"bar",x:1455,y:230,width:30,height:245,orientation:"vertical",value:"fuel_level",from:[0,100],color:{value:"fuel_level",steps:[[15,"#F04438"],[30,"#F5B82E"]],color:"#24C77A"},track:"#293640",radius:10},
-  {type:"text",text:"F",x:1515,y:235,align:"left",size:22,weight:700,fill:bright},
-  {type:"text",text:"E",x:1515,y:475,align:"left",size:22,weight:700,fill:bright},
-  {type:"asset",name:"icon_fuel",x:1438,y:510,width:36,height:36,color:accent},
-  {type:"text",word:"range",x:1470,y:570,align:"center",size:18,weight:600,fill:muted},
-  {type:"text",text:"READY",x:960,y:690,align:"center",size:18,weight:700,spacing:0.18,fill:accent}
+  {type:"text",value:"gear",x:960,y:535,align:"center",size:42,weight:700,font:"tech",fill:ink},
+  {type:"line",from:[650,610],to:[1270,610],stroke:{paint:track,width:2}},
+  {type:"text",word:"mode",x:960,y:650,align:"center",size:18,weight:600,spacing:0.18,fill:dim}
  ];
- return {yoldas_dial:1,name:title,description:"Referans gorselden esinlenen oval dijital arac gosterge paneli.",background:{night,day},parts};
+ return {yoldas_dial:1,name:title,description:"Gorsel referansina gore olusturulmus oval dijital gosterge tasarimi.",background:{night:"#05080C",day:"#EEF2F5"},parts};
 }
 function download(){try{applyEditor();const blob=new Blob([JSON.stringify(config,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(config.name||"kadran").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".json";a.click();URL.revokeObjectURL(a.href);}catch{}}
 $("downloadTop").onclick=download;
@@ -165,8 +157,7 @@ $("generate").onclick=async()=>{
    $("jsonStatus").textContent="TASARIM HAZIR · JSON ALANI GÜNCELLENDİ";
   }
   $("jsonStatus").style.color="#39d99b";
-  if(yoldasTab){yoldasTab.location.href="https://yoldas.io/kadran-atolyesi#kadran-ai="+encodeURIComponent(yoldasCode);yoldasTab.focus();}
-  else{$("jsonStatus").textContent+=" · YOLDAŞ SEKME AÇILAMADI (POPUP ENGELİ)";}
+  window.open("https://yoldas.io/kadran-atolyesi","_blank");
  }catch(error){
   $("jsonStatus").textContent="AI HATASI: "+error.message;
   $("jsonStatus").style.color="#ff7474";
