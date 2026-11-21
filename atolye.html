@@ -361,8 +361,7 @@ $("aiGenerate").onclick=async()=>{
  try{
   const imageData=aiReferenceData||null;
   $("aiStatus").textContent=imageData?"Görselini ve tarifini analiz edip gerçek kadran parçalarını oluşturuyorum…":"Tarifinden sıfırdan kadran parçalarını oluşturuyorum…";
-  const designerPrompt="Kullanıcının isteğini harfiyen takip et. Rastgele başka tema, renk veya araç konsepti ekleme. Yoldaş uyumlu TAM KADRAN JSON'u üret; yalnızca JSON döndür. JSON kök alanları: yoldas_dial (1), name (en fazla 40 karakter), description (en fazla 200 karakter), background:{night:'#RRGGBB',day:'#RRGGBB'}, parts:[...]. parts öğelerinde yalnızca şu türleri kullan: rect,circle,ellipse,line,path,arc,text,scale,group,repeat,scene,gears,signal,bar,ring,clock,nav,media,speed_limit,ready,asset,window. Tuval 1920x720. Tasarımın bütün parçalarını kendin yerleştir; en az 10, en fazla 65 parça üret. Dinamik text value alanlarında speed,rpm,battery,range,power,gear,drive_mode,outside_temp,trip,consumption,odometer değerlerinden uygun olanları kullan. Text öğelerinde text veya value, x,y,size,fill,align,weight alanlarını kullan. arc öğelerinde center,radius,start,sweep,stroke:{paint,width,cap} kullan. ring öğelerinde center,radius,width,value,from,color,track kullan. bar öğelerinde x,y,width,height,value,from,color,track kullan. Renkler geçerli #RRGGBB olsun. Koordinatlar 0-1920 x 0-720 sınırlarında olsun. Kullanıcının istemediği ekrana navigasyon, müzik veya başka araç özellikleri koyma. Kullanıcı bir yerleşim, renk, tema veya öğe belirttiyse onu aynen uygula. Fotoğraf varsa referans al ama kopyalama; fotoğraf yoksa metinden tasarla. Sadece tam Yoldaş JSON nesnesi üret, config üretme.
-KULLANICININ İSTEĞİ: "+prompt;
+  const designerPrompt=prompt
   let result=await aiAskAtelier(imageData,designerPrompt);
   doc=aiToDesign(result,prompt);$("json").value=JSON.stringify(doc,null,2);render();showReport();
   let errors=validate(doc);
