@@ -291,8 +291,31 @@ function aiMakeDial(c,userPrompt=""){
 }
 function aiSetStatus(message,isGood=false){$("extraStatus").textContent=message;$("extraStatus").style.color=isGood?"#42d6a0":"#ffbd58";}
 function aiToDesign(result,prompt=""){
- if(result&&typeof result==="object"&&Array.isArray(result.parts))return result;
- return aiMakeDial(result||{},prompt);
+ const design=result&&typeof result==="object"&&Array.isArray(result.parts)?structuredClone(result):aiMakeDial(result||{},prompt);
+ design.yoldas_dial=1;
+ if(typeof design.name!=="string"||!design.name.trim())design.name="AI Kadran";
+ design.name=design.name.slice(0,40);
+ if(!design.background||typeof design.background!=="object")design.background={night:"#05070B",day:"#EEF1F4"};
+ if(!Array.isArray(design.parts))design.parts=[];
+ const allowed=new Set(["speed","speed_kmh","speed_mph","speed_limit","power","regen","battery","battery_kwh","battery_temp","range","electric_range","consumption","fuel_level","fuel_range","rpm","outside_temp","odometer","odometer_shown","trip_a_km","trip_b_km","accelerator","charge_power","charge_minutes_left","clock_hour","clock_minute","clock_second","media_position","media_duration","media_progress","personal_range","brake_pedal","trip","trip_minutes","trip_energy","trip_consumption","trip_avg_speed","battery_12v","battery_health","charge_energy","charge_added","cabin_temp","ac_temp","ac_fan","pm25_inside","pm25_outside","tire_pressure_fl","tire_pressure_fr","tire_pressure_rl","tire_pressure_rr","tire_pressure_min","tire_pressure_max","tire_temp_fl","tire_temp_fr","tire_temp_rl","tire_temp_rr","window_fl","window_fr","window_rl","window_rr","sunroof","sunshade","slope","gear","drive_mode","energy_mode","regen_level","odometer_page","time","date","nav_instruction","nav_distance","nav_street","nav_direction","nav_eta","nav_remaining","media_title","media_artist","weather","heading","turn_left","turn_right","turn_left_active","turn_right_active","brake","ready","charging","media_playing","day","nav_active","door_fl","door_fr","door_rl","door_rr","hood","trunk","door_open","locked","headlights","parking_lights","hazard","ac_on","seatbelt_driver","seatbelt_passenger","blind_spot_left","blind_spot_right","charge_plug","trip_active"]);
+ const aliases={fuel:"fuel_level",boost:"power",temp:"outside_temp",temperature:"outside_temp",speedometer:"speed",battery_percent:"battery",kmh:"speed"};
+ for(const p of design.parts){
+  if(!p||typeof p!=="object")continue;
+  if(p.type==="text"){
+   if(typeof p.text==="string")p.text=p.text.slice(0,24);
+   if(typeof p.value==="string"&&!allowed.has(p.value)){
+    const mapped=aliases[p.value];
+    if(mapped)p.value=mapped;
+    else{p.text=String(p.text||p.value).slice(0,24);delete p.value;}
+   }
+   if(typeof p.text==="string"&&/\\d/.test(p.text)&&Number(p.size)>28)p.size=28;
+   if(!p.text&&!p.value&&!p.word&&!p.unit_of){p.text="INFO";p.size=Math.min(24,Math.max(12,Number(p.size)||18));}
+  }
+ }
+ if(!design.parts.some(p=>p?.type==="text"&&p.value==="speed"))design.parts.push({type:"text",value:"speed",x:960,y:390,align:"center",size:180,fill:"#F4F7FA"});
+ if(!design.parts.some(p=>p?.type==="gears"||p?.type==="text"&&p.value==="gear"))design.parts.push({type:"gears",x:960,y:570,width:180,size:28,color:"#AAB6C2",active_color:"#20C9FF"});
+ for(const side of ["left","right"])if(!design.parts.some(p=>p?.type==="signal"&&p.side===side))design.parts.push({type:"signal",side,x:side==="left"?700:1220,y:170,size:48});
+ return design;
 }
 async function aiAskAtelier(imageData,prompt){
  const form=new FormData();form.append("prompt",prompt);
