@@ -71,7 +71,7 @@ function setStatus(t,ok=false){$("status").textContent=t;$("status").style.color
 function parse(){try{const d=JSON.parse($("json").value);if(!d||Array.isArray(d)||typeof d!=="object")throw Error("JSON nesnesi olmalı.");doc=d;render();setStatus("JSON başarıyla okundu.",true);return true}catch(e){setStatus("JSON hatası: "+e.message);return false}}
 function getColor(v,f="#20C9FF"){if(typeof v==="string"&&/^#[0-9a-f]{3,8}$/i.test(v))return v;if(v&&typeof v==="object"){if(v[theme])return getColor(v[theme],f);if(v.color)return getColor(v.color,f)}return f}
 function svg(tag,attrs,parent){const n=document.createElementNS(NS,tag);Object.entries(attrs||{}).forEach(([k,v])=>{if(v!==undefined&&v!==null)n.setAttribute(k,String(v))});parent.appendChild(n);return n}
-function valueFor(v){if(v==="gear")return sim.gear;if(v==="drive_mode")return mode;if(v==="energy_mode")return "ev";if(v==="regen_level")return "high";if(v==="time")return "18:42";if(v==="date")return "21.11.2026";if(v==="nav_instruction")return "350 m · Sağa dön";if(v==="nav_distance")return "350 m";if(v==="nav_street")return "Örnek Sokak";if(v==="nav_direction")return "right";if(v==="nav_eta")return "18:50";if(v==="nav_remaining")return "4.2 km";if(v==="media_title")return "Örnek parça";if(v==="media_artist")return "Örnek sanatçı";if(v==="weather")return "clear";if(v==="heading")return "K";if(v==="speed")return driveState==="park"?0:sim.speed;if(v==="battery")return sim.battery;if(v==="range")return sim.range;if(v==="power")return sim.power;if(v==="gear")return sim.gear;if(v==="drive_mode")return mode.toUpperCase();if(v==="outside_temp")return 23;if(v==="trip")return 12.6;if(v==="trip_avg_speed")return 48;if(v==="trip_minutes")return 18;if(v==="consumption")return 16.4;if(v==="odometer")return 12840;if(v==="time")return "18:42";if(v==="date")return "18.11.2026";if(v==="battery_kwh")return 62.4;if(v==="speed_limit")return 90;if(v==="turn_left")return sim.turn_left;if(v==="turn_right")return sim.turn_right;if(v==="ready")return driveState!=="park";return "—"}
+function valueFor(v){if(v==="rpm")return 4200;if(v==="fuel")return 76;if(v==="boost")return 1.4;if(v==="temp")return "92°C";if(v==="lap_time")return "01:24.638";if(v==="gear")return sim.gear;if(v==="drive_mode")return mode;if(v==="energy_mode")return "ev";if(v==="regen_level")return "high";if(v==="time")return "18:42";if(v==="date")return "21.11.2026";if(v==="nav_instruction")return "350 m · Sağa dön";if(v==="nav_distance")return "350 m";if(v==="nav_street")return "Örnek Sokak";if(v==="nav_direction")return "right";if(v==="nav_eta")return "18:50";if(v==="nav_remaining")return "4.2 km";if(v==="media_title")return "Örnek parça";if(v==="media_artist")return "Örnek sanatçı";if(v==="weather")return "clear";if(v==="heading")return "K";if(v==="speed")return driveState==="park"?0:sim.speed;if(v==="battery")return sim.battery;if(v==="range")return sim.range;if(v==="power")return sim.power;if(v==="gear")return sim.gear;if(v==="drive_mode")return mode.toUpperCase();if(v==="outside_temp")return 23;if(v==="trip")return 12.6;if(v==="trip_avg_speed")return 48;if(v==="trip_minutes")return 18;if(v==="consumption")return 16.4;if(v==="odometer")return 12840;if(v==="time")return "18:42";if(v==="date")return "18.11.2026";if(v==="battery_kwh")return 62.4;if(v==="speed_limit")return 90;if(v==="turn_left")return sim.turn_left;if(v==="turn_right")return sim.turn_right;if(v==="ready")return driveState!=="park";return "—"}
 function textValue(p){if(p.text!==undefined)return p.text;if(p.word)return ({battery:"BATARYA",range:"MENZİL",consumption:"TÜKETİM",power:"GÜÇ",regen:"REJEN",mode:"SÜRÜŞ KİPİ",outside:"DIŞ SICAKLIK",ready:"HAZIR",speed:"HIZ",gear:"VİTES",odometer:"KİLOMETRE",brake:"FREN"})[p.word]||p.word.toUpperCase();if(p.unit_of)return p.unit_of==="speed"?"KM/H":p.unit_of.toUpperCase();if(p.value)return String(valueFor(p.value));return ""}
 function point(p){return Array.isArray(p.center)?p.center:[p.x||0,p.y||0]}
 function drawPart(p,parent,index){if(!p||typeof p!=="object")return;const g=svg("g",{"data-part":index,class:"part-chip"},parent);let fill=getColor(p.fill,"#20C9FF"),stroke=getColor(p.stroke?.paint||p.color,"#20C9FF"),xy=point(p),title=p.type+" · "+(p.value||p.text||p.side||"öğe");
@@ -204,32 +204,57 @@ $("warnings").onchange=render;$("windows").onchange=render;
 $("photo").onchange=e=>{const f=e.target.files?.[0];if(!f)return;if(photoUrl)URL.revokeObjectURL(photoUrl);photoUrl=URL.createObjectURL(f);$("photoPreview").src=photoUrl;$("photoPreview").hidden=false;render()};
 document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{const kind=b.dataset.preset;if(kind==="simple")doc=structuredClone(sample);if(kind==="classic")doc=structuredClone(sample),doc.name="KLASİK İBRELİ",doc.parts.unshift({type:"circle",center:[620,355],radius:210,fill:"#0B0D10",stroke:{paint:"#8995A2",width:3}},{type:"scale",shape:"arc",center:[620,355],radius:195,start:-135,sweep:270,range:[0,200],major:50,minor:10,width:3,color:"#F2F4F7",numbers:{size:25,offset:35,color:"#F2F4F7"}});if(kind==="sport")doc=structuredClone(sample),doc.name="SPORT RED",doc.background={night:"#070707",day:"#F2F2F2"},doc.parts[2].stroke.paint="#FF3B30",doc.parts[7].fill="#FF3B30";if(kind==="battery")doc=structuredClone(sample),doc.name="BATARYA ODAKLI",doc.parts[9].radius=145; $("json").value=JSON.stringify(doc,null,2);render();showReport()});
 
-function aiMakeDial(c){
- const accent=typeof c.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.accent)?c.accent:"#20C9FF";
- const secondary=typeof c.secondary==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.secondary)?c.secondary:"#8B5CF6";
- const title=String(c.name||"DIGITAL COCKPIT").replace(/[\r\n]+/g," ").slice(0,40);
- const textColor={night:"#F4F7FA",day:"#17212B"},dimColor={night:"#AAB6C2",day:"#526170"},track={night:"#FFFFFF24",day:"#10151C20"};
- const speedMax=Math.min(400,Math.max(80,Number(c.maxSpeed)||240));
+function aiMakeDial(c,userPrompt=""){
+ const prompt=String(userPrompt||"");
+ const race=/yarış|yaris|racing|gt[1-4]|formula|pist|motorsport|race car|yarış otomobili/i.test(prompt);
+ const accent=typeof c.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.accent)?c.accent:(race?"#FF303B":"#20C9FF");
+ const secondary=typeof c.secondary==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.secondary)?c.secondary:(race?"#FFB12B":"#8B5CF6");
+ const title=String(c.name|| (race?"GT RACING // TRACK MODE":"DIGITAL COCKPIT")).replace(/[\r\n]+/g," ").slice(0,40);
+ const maxSpeed=Math.min(400,Math.max(80,Number(c.maxSpeed)||(race?350:240)));
+ const maxRpm=Math.min(12000,Math.max(3000,Number(c.maxRpm)||(race?9000:8000)));
+ const speedColor=accent,txt={night:"#F4F7FA",day:"#17212B"},muted={night:"#9EADBC",day:"#526170"},track={night:"#FFFFFF22",day:"#10151C20"};
  const parts=[
- {type:"circle",center:[960,350],radius:315,fill:{radial:{center:[960,350],radius:315,stops:[[0,accent+"18"],[1,"#05070B00"]]}},stroke:{paint:accent+"55",width:3}},
- {type:"arc",center:[960,350],radius:275,start:-135,sweep:270,stroke:{paint:track,width:14,cap:"round"}},
- {type:"arc",center:[960,350],radius:275,start:-135,sweep:270,stroke:{paint:accent,width:5,cap:"round"},glow:{color:accent,size:12,strength:0.35}},
- {type:"text",text:title,x:960,y:92,align:"center",size:24,weight:700,spacing:0.16,fill:dimColor},
- {type:"signal",side:"left",x:650,y:248,size:56},{type:"signal",side:"right",x:1214,y:248,size:56},
- {type:"text",value:"speed",x:960,y:330,align:"center",size:190,weight:500,font:"tech",fill:textColor},
- {type:"text",unit_of:"speed",uppercase:true,x:960,y:452,align:"center",size:22,weight:700,spacing:0.2,fill:accent},
- {type:"gears",x:860,y:520,width:200,size:26,active_size:36,active_weight:700,color:dimColor,active_color:accent},
- {type:"ring",center:[390,350],radius:105,width:12,start:-135,sweep:270,value:"battery",from:[0,100],color:accent,track:track},
- {type:"text",value:"battery",x:390,y:350,align:"center",size:46,weight:400,font:"tech",fill:textColor},
- {type:"text",word:"battery",x:390,y:475,align:"center",size:17,weight:600,spacing:0.16,fill:dimColor},
- {type:"ring",center:[1530,350],radius:105,width:12,start:-135,sweep:270,value:"range",from:[0,600],color:secondary,track:track},
- {type:"text",value:"range",unit:{size:18},x:1530,y:350,align:"center",size:48,weight:400,font:"tech",fill:textColor},
- {type:"text",word:"range",x:1530,y:475,align:"center",size:17,weight:600,spacing:0.16,fill:dimColor},
- {type:"line",from:[610,585],to:[1310,585],stroke:{paint:track,width:2}},
- {type:"text",word:"mode",x:960,y:635,align:"center",size:18,weight:600,spacing:0.16,fill:dimColor}
+  {type:"rect",x:0,y:0,width:1920,height:720,fill:{night:"#07090D",day:"#E9EDF1"}},
+  {type:"text",text:title,x:960,y:78,align:"center",size:25,weight:800,spacing:.18,fill:muted},
+  {type:"arc",center:[960,350],radius:292,start:-220,sweep:260,stroke:{paint:track,width:20,cap:"round"}},
+  {type:"arc",center:[960,350],radius:292,start:-220,sweep:260,stroke:{paint:accent,width:7,cap:"round"},glow:{color:accent,size:10,strength:.4}},
+  {type:"text",text:race?"KM/H":"VEHICLE SPEED",x:960,y:245,align:"center",size:20,weight:700,spacing:.15,fill:accent},
+  {type:"text",value:"speed",x:960,y:390,align:"center",size:210,weight:700,font:"tech",fill:txt},
+  {type:"text",text:"MAX "+maxSpeed+" KM/H",x:960,y:435,align:"center",size:17,weight:600,fill:muted},
+  {type:"ring",center:[430,355],radius:132,width:17,start:-220,sweep:260,value:"rpm",from:[0,maxRpm],color:secondary,track:track},
+  {type:"text",value:"rpm",x:430,y:360,align:"center",size:62,weight:700,font:"tech",fill:txt},
+  {type:"text",text:"RPM x1000",x:430,y:420,align:"center",size:17,weight:700,fill:muted},
+  {type:"text",text:"0     2     4     6     8     9",x:430,y:535,align:"center",size:18,weight:700,fill:muted},
+  {type:"text",text:"FUEL",x:1450,y:255,align:"center",size:18,weight:700,fill:muted},
+  {type:"bar",x:1330,y:280,width:240,height:13,height:13,value:"fuel",from:[0,100],color:accent,track:track},
+  {type:"text",value:"fuel",x:1450,y:335,align:"center",size:34,weight:700,fill:txt},
+  {type:"text",text:"TURBO",x:1450,y:410,align:"center",size:18,weight:700,fill:muted},
+  {type:"bar",x:1330,y:435,width:240,height:13,value:"boost",from:[0,3],color:secondary,track:track},
+  {type:"text",value:"boost",x:1450,y:490,align:"center",size:34,weight:700,fill:txt},
+  {type:"text",text:"ENGINE TEMP",x:470,y:610,align:"center",size:16,weight:700,fill:muted},
+  {type:"text",value:"temp",x:470,y:650,align:"center",size:28,weight:700,fill:txt},
+  {type:"text",text:"LAP TIME",x:960,y:590,align:"center",size:16,weight:700,fill:muted},
+  {type:"text",text:"01:24.638",x:960,y:640,align:"center",size:34,weight:700,font:"tech",fill:accent},
+  {type:"gears",x:1250,y:625,width:200,size:30,active_size:42,color:muted,active_color:accent},
+  {type:"signal",side:"left",x:700,y:170,size:48},
+  {type:"signal",side:"right",x:1220,y:170,size:48}
  ];
- if(c.layout==="horizontal")parts.splice(1,2,{type:"rect",x:510,y:250,width:900,height:8,radius:4,fill:track},{type:"rect",x:510,y:250,width:900,height:8,radius:4,fill:accent,glow:{color:accent,size:8,strength:0.25},reveal:{value:"speed",from:[0,speedMax],direction:"right",smooth:250}});
- return {yoldas_dial:1,name:title,description:"AI tarafindan olusturulan tasarim.",background:{night:"#05070B",day:"#EEF1F4"},parts};
+ if(!race){
+  parts[4]={type:"text",text:"VEHICLE SPEED",x:960,y:245,align:"center",size:20,weight:700,spacing:.15,fill:accent};
+  parts[7]={type:"ring",center:[430,355],radius:132,width:17,start:-220,sweep:260,value:"battery",from:[0,100],color:secondary,track:track};
+  parts[8]={type:"text",value:"battery",x:430,y:360,align:"center",size:62,weight:700,font:"tech",fill:txt};
+  parts[9]={type:"text",text:"BATTERY",x:430,y:420,align:"center",size:17,weight:700,fill:muted};
+  parts[10]={type:"text",text:"CHARGE / POWER",x:430,y:535,align:"center",size:18,weight:700,fill:muted};
+  parts[11]={type:"text",text:"RANGE",x:1450,y:255,align:"center",size:18,weight:700,fill:muted};
+  parts[12]={type:"bar",x:1330,y:280,width:240,height:13,value:"range",from:[0,600],color:accent,track:track};
+  parts[13]={type:"text",value:"range",x:1450,y:335,align:"center",size:34,weight:700,fill:txt};
+  parts[14]={type:"text",text:"POWER",x:1450,y:410,align:"center",size:18,weight:700,fill:muted};
+  parts[15]={type:"bar",x:1330,y:435,width:240,height:13,value:"power",from:[0,200],color:secondary,track:track};
+  parts[16]={type:"text",value:"power",x:1450,y:490,align:"center",size:34,weight:700,fill:txt};
+  parts[17]={type:"text",text:"OUTSIDE TEMP",x:470,y:610,align:"center",size:16,weight:700,fill:muted};
+  parts[18]={type:"text",value:"outside_temp",x:470,y:650,align:"center",size:28,weight:700,fill:txt};
+ }
+ return {yoldas_dial:1,name:title,description:race?"AI tarafından oluşturulan yarış otomobili kokpit kadranı.":"AI tarafından oluşturulan otomobil kadranı.",background:{night:race?"#07090D":"#05070B",day:"#EEF1F4"},parts};
 }
 function aiSetStatus(message,isGood=false){$("extraStatus").textContent=message;$("extraStatus").style.color=isGood?"#42d6a0":"#ffbd58";}
 async function aiAskAtelier(imageData,prompt){
@@ -259,14 +284,14 @@ async function runAtelierAIJob(){
  try{
   let cfg=job.config,errors=[];
   for(let round=1;round<=7;round++){
-   doc=aiMakeDial(cfg);$("json").value=JSON.stringify(doc,null,2);render();errors=validate(doc);showReport();
+   doc=aiMakeDial(cfg,prompt);$("json").value=JSON.stringify(doc,null,2);render();errors=validate(doc);showReport();
    if(!errors.length)break;
    if(round===7)break;
    aiSetStatus("Atölye "+errors.length+" hata buldu · AI otomatik düzeltme "+round+"/6");
    const repairPrompt="Sen Kadran Atölyesi tasarım düzeltme yapay zekasısın. Kullanıcının görselini ve ilk isteğini koru. Atölye doğrulayıcısının bulduğu hataları gider. Yalnızca JSON config döndür; desteklenen alanlar: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. layout: dual-dial/single-dial/horizontal/minimal; gaugeStyle: neon/solid/minimal; renkler #RRGGBB. Tasarımı baştan farklılaştırma.\nİLK İSTEK: "+job.prompt+"\nHATALAR: "+errors.join(" | ")+"\nMEVCUT CONFIG: "+JSON.stringify(cfg)+"\nMEVCUT ATÖLYE JSON: "+JSON.stringify(doc);
    cfg=await aiAskAtelier(job.image,repairPrompt);
   }
-  doc=aiMakeDial(cfg);$("json").value=JSON.stringify(doc,null,2);render();showReport();errors=validate(doc);
+  doc=aiMakeDial(cfg,prompt);$("json").value=JSON.stringify(doc,null,2);render();showReport();errors=validate(doc);
   if(errors.length){aiSetStatus("6 düzeltme turundan sonra kalan Atölye hataları: "+errors.join(" · "));return}
   localStorage.setItem("kadran_atolye_json",JSON.stringify(doc));localStorage.setItem("kadran_atolye_name",doc.name||"AI Kadran");localStorage.removeItem("kadran_atolye_ai_job");
   aiSetStatus("✓ AI TASARIMI TAMAMLADI · ATÖLYE HATA BULMADI · TASARIM EKRANDA HAZIR",true);
