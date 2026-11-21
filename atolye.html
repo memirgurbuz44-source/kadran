@@ -99,7 +99,7 @@ function validate(d){
  else if(d.name.length>40)add("out_of_range:name — en çok 40 karakter.");
  if(d.description!==undefined&&(typeof d.description!=="string"||d.description.length>200))add("out_of_range:description — en çok 200 karakter.");
  const colorOk=v=>typeof v==="string"&&(/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(v)||["$mode","$mode_deep","$mode_light","$signal","$brake","$warning","$text","$text_dim","$background"].includes(v));
- const paintOk=v=>colorOk(v)||!!(v&&typeof v==="object"&&["linear","radial","sweep","pattern"].some(k=>v[k]&&typeof v[k]==="object"));
+ const paintOk=v=>colorOk(v)||!!(v&&typeof v==="object"&&((colorOk(v.night)&&colorOk(v.day))||["linear","radial","sweep","pattern"].some(k=>v[k]&&typeof v[k]==="object")));
  if(!(typeof d.background==="string"&&colorOk(d.background))&&!(d.background&&typeof d.background==="object"&&colorOk(d.background.night)&&colorOk(d.background.day)))add("missing_field/background: gece ve gündüz renkleri geçerli olmalı.");
  if(!Array.isArray(d.parts))return [...e,"missing_field:parts"];
  const ps=d.parts;if(ps.length>400)add("budget_parts: 400 üst düzey parça sınırı aşıldı.");
