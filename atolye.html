@@ -207,9 +207,22 @@ document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{const kind=
 function aiMakeDial(c,userPrompt=""){
  const prompt=String(userPrompt||"");
  const race=/yarış|yaris|racing|gt[1-4]|formula|pist|motorsport|race car|yarış otomobili/i.test(prompt);
- const accent=typeof c.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.accent)?c.accent:(race?"#FF303B":"#20C9FF");
- const secondary=typeof c.secondary==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.secondary)?c.secondary:(race?"#FFB12B":"#8B5CF6");
- const title=String(c.name|| (race?"GT RACING // TRACK MODE":"DIGITAL COCKPIT")).replace(/[\r\n]+/g," ").slice(0,40);
+ // Kullanıcının tarifindeki renk ve tarzı görünür biçimde uygula; AI aynı config'i döndürse bile önizleme değişsin.
+ const palettes=[
+  {re:/kırmızı|kirmizi|red|yarış|yaris|racing|formula|pist/i,a:"#FF303B",b:"#FFB12B",name:"REDLINE"},
+  {re:/mavi|blue|buz|ice|elektrik/i,a:"#20C9FF",b:"#8B5CF6",name:"ELECTRIC"},
+  {re:/mor|purple|violet/i,a:"#A855F7",b:"#EC4899",name:"VIOLET"},
+  {re:/yeşil|yesil|green|eco/i,a:"#32D583",b:"#A3E635",name:"ECO DRIVE"},
+  {re:/turuncu|orange|amber/i,a:"#FF8A30",b:"#FFD166",name:"SUNSET"},
+  {re:/sarı|sari|yellow/i,a:"#FACC15",b:"#FB923C",name:"GOLD"},
+  {re:/pembe|pink|rose/i,a:"#F472B6",b:"#A78BFA",name:"ROSE"},
+  {re:/beyaz|white|gümüş|gumus|silver|minimal|sade/i,a:"#DCE6F2",b:"#7C9AB8",name:"PURE"}
+ ];
+ const palette=palettes.find(p=>p.re.test(prompt))||(race?palettes[0]:null);
+ const accent=palette?palette.a:(typeof c.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.accent)?c.accent:"#20C9FF");
+ const secondary=palette?palette.b:(typeof c.secondary==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.secondary)?c.secondary:"#8B5CF6");
+ const rawTitle=palette?(race?"GT "+palette.name+" // TRACK MODE":palette.name+" // DIGITAL COCKPIT"):(c.name||prompt.replace(/[\r\n]+/g," ").slice(0,34).toUpperCase()||"DIGITAL COCKPIT");
+ const title=String(rawTitle).replace(/[\r\n]+/g," ").slice(0,40);
  const maxSpeed=Math.min(400,Math.max(80,Number(c.maxSpeed)||(race?350:240)));
  const maxRpm=Math.min(12000,Math.max(3000,Number(c.maxRpm)||(race?9000:8000)));
  const speedColor=accent,txt={night:"#F4F7FA",day:"#17212B"},muted={night:"#9EADBC",day:"#526170"},track={night:"#FFFFFF22",day:"#10151C20"};
