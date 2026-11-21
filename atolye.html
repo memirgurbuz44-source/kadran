@@ -284,14 +284,14 @@ async function runAtelierAIJob(){
  try{
   let cfg=job.config,errors=[];
   for(let round=1;round<=7;round++){
-   doc=aiMakeDial(cfg,prompt);$("json").value=JSON.stringify(doc,null,2);render();errors=validate(doc);showReport();
+   doc=aiMakeDial(cfg,job.prompt);$("json").value=JSON.stringify(doc,null,2);render();errors=validate(doc);showReport();
    if(!errors.length)break;
    if(round===7)break;
    aiSetStatus("Atölye "+errors.length+" hata buldu · AI otomatik düzeltme "+round+"/6");
    const repairPrompt="Sen Kadran Atölyesi tasarım düzeltme yapay zekasısın. Kullanıcının görselini ve ilk isteğini koru. Atölye doğrulayıcısının bulduğu hataları gider. Yalnızca JSON config döndür; desteklenen alanlar: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. layout: dual-dial/single-dial/horizontal/minimal; gaugeStyle: neon/solid/minimal; renkler #RRGGBB. Tasarımı baştan farklılaştırma.\nİLK İSTEK: "+job.prompt+"\nHATALAR: "+errors.join(" | ")+"\nMEVCUT CONFIG: "+JSON.stringify(cfg)+"\nMEVCUT ATÖLYE JSON: "+JSON.stringify(doc);
    cfg=await aiAskAtelier(job.image,repairPrompt);
   }
-  doc=aiMakeDial(cfg,prompt);$("json").value=JSON.stringify(doc,null,2);render();showReport();errors=validate(doc);
+  doc=aiMakeDial(cfg,job.prompt);$("json").value=JSON.stringify(doc,null,2);render();showReport();errors=validate(doc);
   if(errors.length){aiSetStatus("6 düzeltme turundan sonra kalan Atölye hataları: "+errors.join(" · "));return}
   localStorage.setItem("kadran_atolye_json",JSON.stringify(doc));localStorage.setItem("kadran_atolye_name",doc.name||"AI Kadran");localStorage.removeItem("kadran_atolye_ai_job");
   aiSetStatus("✓ AI TASARIMI TAMAMLADI · ATÖLYE HATA BULMADI · TASARIM EKRANDA HAZIR",true);
@@ -325,14 +325,14 @@ $("aiGenerate").onclick=async()=>{
   const designerPrompt="Sen deneyimli, doğal ve yardımsever bir otomotiv arayüz tasarımcısısın. Kullanıcıyla Türkçe, insan gibi ve anlaşılır iletişim kur. Kullanıcının tarifini dikkatle yorumla; fotoğraf verilmediyse bunu sorun etme, yalnızca metinden özgün bir tasarım oluştur. Eksik ayrıntılarda makul tasarım kararları ver; gereksiz soru sorma. Tasarım kullanıcının isteğine özgü olsun; her istekte aynı renk ve yerleşimi tekrarlama. Yalnızca aşağıdaki config alanlarını içeren geçerli JSON nesnesi döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. layout değerleri dual-dial/single-dial/horizontal/minimal; gaugeStyle neon/solid/minimal; renkler #RRGGBB. Kullanıcı başka dilde yazsa bile açıklama alanları dışında config anahtarları sabit kalsın.\nKULLANICININ İSTEĞİ: "+prompt;
   let cfg=await aiAskAtelier(imageData,designerPrompt),errors=[];
   for(let round=0;round<=6;round++){
-   doc=aiMakeDial(cfg);$("json").value=JSON.stringify(doc,null,2);render();errors=validate(doc);showReport();
+   doc=aiMakeDial(cfg,prompt);$("json").value=JSON.stringify(doc,null,2);render();errors=validate(doc);showReport();
    if(!errors.length)break;
    if(round===6)break;
    $("aiStatus").textContent="Atölye "+errors.length+" hata buldu · AI düzeltme turu "+(round+1)+"/6…";
    const fixPrompt="Kadran tasarım ayarlarını düzelt. Kullanıcının isteğini ve mevcut görsel referansını koru. Yalnızca geçerli JSON nesnesi olarak config döndür; alanlar: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. Renkler #RRGGBB. layout: dual-dial/single-dial/horizontal/minimal; gaugeStyle: neon/solid/minimal. Hatalar: "+errors.join(" | ")+"\nİlk kullanıcı isteği: "+prompt+"\nMevcut config: "+JSON.stringify(cfg)+"\nMevcut kadran JSON: "+JSON.stringify(doc);
    cfg=await aiAskAtelier(imageData,fixPrompt);
   }
-  doc=aiMakeDial(cfg);$("json").value=JSON.stringify(doc,null,2);render();showReport();errors=validate(doc);
+  doc=aiMakeDial(cfg,prompt);$("json").value=JSON.stringify(doc,null,2);render();showReport();errors=validate(doc);
   if(errors.length)throw new Error("Düzeltme turlarından sonra kalan hatalar: "+errors.join(" · "));
   localStorage.setItem("kadran_atolye_json",JSON.stringify(doc));
   localStorage.setItem("kadran_atolye_name",doc.name||"AI Kadran");
