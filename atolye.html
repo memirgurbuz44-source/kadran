@@ -39,7 +39,7 @@ main{max-width:1600px;margin:auto;padding:22px 3%}.intro{display:flex;justify-co
 <script>
 const $=id=>document.getElementById(id);
 const NS="http://www.w3.org/2000/svg";
-const TYPES=new Set(["path","rect","circle","ellipse","line","arc","text","scale","group","repeat","gears","signal","bar","ring","clock","nav","media","speed_limit","ready","asset","window"]);
+const TYPES=new Set(["path","rect","circle","ellipse","line","arc","text","scale","group","repeat","scene","gears","signal","bar","ring","clock","nav","media","speed_limit","ready","asset","window"]);
 const sample={yoldas_dial:1,name:"MIDNIGHT GT",description:"Gece mavisi, ortada büyük hız ve yanlarda batarya ile menzil.",background:{night:"#05070B",day:"#EEF1F4"},parts:[
 {type:"circle",center:[960,355],radius:300,fill:"#0B1420",stroke:{paint:"#20C9FF66",width:3}},
 {type:"arc",center:[960,355],radius:270,start:-135,sweep:270,stroke:{paint:"#FFFFFF28",width:14,cap:"round"}},
@@ -86,7 +86,89 @@ else if(p.type==="group"&&Array.isArray(p.parts)){const child=svg("g",{},g);p.pa
 g.addEventListener("click",()=>selectPart(p,index,title));}
 function selectPart(p,index,title){selectedPart={p,index,title};$("selected").textContent="Seçildi: "+title+" (parts["+index+"])";const prompt="Mevcut Yoldaş kadran JSON'unda yalnızca parts["+index+"] öğesini düzenle. Diğer bütün öğeleri ve tasarımın geri kalanını aynen koru. İstediğim değişiklik: [BURAYA DEĞİŞİKLİĞİ YAZ]. Yalnızca kitte desteklenen alanları kullan.";navigator.clipboard?.writeText(prompt).then(()=>{$("extraStatus").textContent="Seçili öğe için düzenleme talimatı panoya kopyalandı."}).catch(()=>{});}
 function render(){const root=$("preview");root.replaceChildren();const bg=doc.background?.[theme]||doc.background?.night||"#05070B";svg("rect",{x:0,y:0,width:1920,height:720,fill:bg},root);if($("warnings").checked){svg("rect",{x:10,y:80,width:114,height:420,fill:"#ffb020",opacity:.035},root);svg("rect",{x:1796,y:80,width:114,height:420,fill:"#ffb020",opacity:.035},root);const a=svg("text",{x:68,y:120,fill:"#ffbd58","font-size":15,"text-anchor":"middle"},root);a.textContent="UYARI";const b=svg("text",{x:1850,y:120,fill:"#ffbd58","font-size":15,"text-anchor":"middle"},root);b.textContent="UYARI"}(Array.isArray(doc.parts)?doc.parts:[]).forEach((p,i)=>drawPart(p,root,i));$("modeLabel").textContent=mode.toUpperCase();$("themeLabel").textContent=theme==="night"?"GECE":"GÜNDÜZ";$("stateLabel").textContent=driveState==="fake"?"SAHTE SÜRÜŞ":driveState==="park"?"PARK":"SABİT";}
-function validate(d){const e=[];if(!d||typeof d!=="object"||Array.isArray(d))return["Dosya JSON nesnesi değil."];if(d.yoldas_dial!==1)e.push("missing_field:yoldas_dial — sürüm 1 olmalı.");if(typeof d.name!=="string"||!d.name.trim())e.push("missing_field:name");if(!d.background||typeof d.background!=="object")e.push("missing_field:background");if(!Array.isArray(d.parts))e.push("missing_field:parts");else{const ps=d.parts;if(ps.length>400)e.push("budget_parts: 400 üst düzey parça sınırı aşıldı.");if(!ps.some(p=>p?.type==="gears"||p?.type==="text"&&p.value==="gear"))e.push("missing_gear: Vites göstergesi yok.");if(!ps.some(p=>p?.type==="signal"&&p.side==="left"))e.push("missing_signal_left: Sol sinyal oku yok.");if(!ps.some(p=>p?.type==="signal"&&p.side==="right"))e.push("missing_signal_right: Sağ sinyal oku yok.");if(!ps.some(p=>p?.type==="text"&&p.value==="speed"&&Number(p.size)>=120||p?.type==="group"&&JSON.stringify(p).includes('"speed"')))e.push("missing_speed: En az 120 boyutunda hız göstergesi veya hız ölçekli ibre gerekli.");let glows=0,motions=0,windows=0;ps.forEach((p,i)=>{if(!p||typeof p!=="object"||!TYPES.has(p.type))e.push("unknown_type at $.parts["+i+"]");if(p?.glow)glows++;if(p?.motion)motions++;if(p?.type==="window")windows++;if(p?.type==="text"&&(!Number.isFinite(Number(p.size))||p.size<12))e.push("text_too_small at $.parts["+i+"]");if(p?.type==="text"&&p.value==="speed"&&p.size<120)e.push("text_too_small:speed at $.parts["+i+"]");if(p?.type==="signal"&&!["left","right"].includes(p.side))e.push("unknown_value:signal.side at $.parts["+i+"]");});if(glows>12)e.push("budget_glow: En fazla 12 glow kullanılabilir.");if(motions>40)e.push("budget_motion: En fazla 40 hareket kullanılabilir.");if(windows>6)e.push("budget_window: En fazla 6 pencere kullanılabilir.");}try{if(new Blob([JSON.stringify(d)]).size>256*1024)e.push("budget_file: Dosya 256 KB sınırını aşıyor.")}catch{}return [...new Set(e)]}
+function validate(d){
+ const e=[];
+ const add=x=>e.push(x);
+ if(!d||typeof d!=="object"||Array.isArray(d))return["Dosya JSON nesnesi değil."];
+ if(![1,3,4].includes(d.yoldas_dial))add("missing_field:yoldas_dial — 1, sahne için 3, Trip A/B veya seçili kilometre için 4 olmalı.");
+ if(typeof d.name!=="string"||!d.name.trim())add("missing_field:name");
+ else if(d.name.length>40)add("out_of_range:name — en çok 40 karakter.");
+ if(d.description!==undefined&&(typeof d.description!=="string"||d.description.length>200))add("out_of_range:description — en çok 200 karakter.");
+ const colorOk=v=>typeof v==="string"&&(/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(v)||["$mode","$mode_deep","$mode_light","$signal","$brake","$warning","$text","$text_dim","$background"].includes(v));
+ const paintOk=v=>colorOk(v)||!!(v&&typeof v==="object"&&["linear","radial","sweep","pattern"].some(k=>v[k]&&typeof v[k]==="object"));
+ if(!(typeof d.background==="string"&&colorOk(d.background))&&!(d.background&&typeof d.background==="object"&&colorOk(d.background.night)&&colorOk(d.background.day)))add("missing_field/background: gece ve gündüz renkleri geçerli olmalı.");
+ if(!Array.isArray(d.parts))return [...e,"missing_field:parts"];
+ const ps=d.parts;if(ps.length>400)add("budget_parts: 400 üst düzey parça sınırı aşıldı.");
+ const types=new Set(["path","rect","circle","ellipse","line","arc","text","scale","group","repeat","scene","gears","signal","bar","ring","clock","nav","media","speed_limit","ready","asset","window"]);
+ const values=new Set(["speed","speed_kmh","speed_mph","speed_limit","power","regen","battery","battery_kwh","battery_temp","range","electric_range","consumption","fuel_level","fuel_range","rpm","outside_temp","odometer","odometer_shown","trip_a_km","trip_b_km","accelerator","charge_power","charge_minutes_left","clock_hour","clock_minute","clock_second","media_position","media_duration","media_progress","personal_range","brake_pedal","trip","trip_minutes","trip_energy","trip_consumption","trip_avg_speed","battery_12v","battery_health","charge_energy","charge_added","cabin_temp","ac_temp","ac_fan","pm25_inside","pm25_outside","tire_pressure_fl","tire_pressure_fr","tire_pressure_rl","tire_pressure_rr","tire_pressure_min","tire_pressure_max","tire_temp_fl","tire_temp_fr","tire_temp_rl","tire_temp_rr","window_fl","window_fr","window_rl","window_rr","sunroof","sunshade","slope"]);
+ const words=new Set(["battery","range","consumption","power","regen","mode","outside","ready","speed","gear","odometer","brake"]);
+ const bools=new Set(["turn_left","turn_right","turn_left_active","turn_right_active","brake","ready","charging","media_playing","day","nav_active","door_fl","door_fr","door_rl","door_rr","hood","trunk","door_open","locked","headlights","parking_lights","hazard","ac_on","seatbelt_driver","seatbelt_passenger","blind_spot_left","blind_spot_right","charge_plug","trip_active"]);
+ const allowedTextValues=new Set(["gear","drive_mode","energy_mode","regen_level","odometer_page","time","date","nav_instruction","nav_distance","nav_street","nav_direction","nav_eta","nav_remaining","media_title","media_artist","weather","heading"]);
+ let glow=0,motion=0,windows=0,maskBlend=0,pathChars=0,expanded=0,sceneCount=0,hasSpeed=false,hasGear=false,hasLeft=false,hasRight=false,largestSpeed=0,largestNumber=0;
+ const walk=(list,path,depth=0)=>{
+  if(depth>4){add("budget_group_depth at "+path);return}
+  for(let i=0;i<list.length;i++){
+   const p=list[i],at=path+"["+i+"]";
+   if(!p||typeof p!=="object"||Array.isArray(p)){add("unknown_type at "+at);continue}
+   if(!types.has(p.type)){add("unknown_type:"+String(p.type)+" at "+at);continue}
+   if(p.glow){glow++;if(!p.glow||typeof p.glow!=="object"||!colorOk(p.glow.color)||!Number.isFinite(Number(p.glow.size))||Number(p.glow.size)<0||Number(p.glow.size)>100||!Number.isFinite(Number(p.glow.strength))||Number(p.glow.strength)<0||Number(p.glow.strength)>1)add("bad_glow at "+at)}
+   if(p.motion)motion++;
+   if(p.mask||p.blend&&p.blend!=="normal"||p.type==="group"&&p.opacity!==undefined&&Number(p.opacity)<1)maskBlend++;
+   if(p.type==="window"){windows++;if(!["camera_front","camera_left","camera_right","camera_rear","camera_rear_view","camera_road","map","app","media_art","photo"].includes(p.source))add("unknown_value:window.source at "+at);if(!Number.isFinite(Number(p.width))||!Number.isFinite(Number(p.height))||Number(p.width)<=0||Number(p.height)<=0)add("not_number:window dimensions at "+at)}
+   if(p.type==="scene"){sceneCount++;if(i!==0)add("scene_not_first at "+at);if(depth!==0)add("scene_not_first: scene group/repeat içinde olamaz at "+at);if(p.style!==undefined&&p.style!=="horizon")add("unknown_value:scene.style at "+at);if(p.fill!==undefined||p.stroke!==undefined||p.opacity!==undefined||p.show_when!==undefined)add("unknown_field:scene ortak alan kullanamaz at "+at)}
+   if(p.type==="text"){
+    const content=["text","value","word","unit_of"].filter(k=>p[k]!==undefined);
+    if(content.length!==1)add("missing_content: text parçasında text/value/word/unit_of alanlarından tam biri olmalı at "+at);
+    if(p.text!==undefined&&(typeof p.text!=="string"||p.text.length>24))add("out_of_range:text — sabit yazı en çok 24 karakter at "+at);
+    if(p.value!==undefined&&!values.has(p.value)&&!allowedTextValues.has(p.value)&&!bools.has(p.value))add("unknown_value:text.value at "+at);
+    if(p.word!==undefined&&!words.has(p.word))add("unknown_value:text.word at "+at);
+    if(p.unit_of!==undefined&&!["speed","power","regen","battery","range","consumption","outside_temp","trip","trip_energy","trip_consumption","trip_avg_speed","battery_kwh","battery_temp","rpm","charge_power","tire_pressure_fl","tire_pressure_fr","tire_pressure_rl","tire_pressure_rr"].includes(p.unit_of))add("unknown_value:text.unit_of at "+at);
+    if(!Number.isFinite(Number(p.size))||Number(p.size)<12||Number(p.size)>400)add("text_too_small/out_of_range:size at "+at);
+    if(p.text&&/\d/.test(p.text)&&Number(p.size)>28)add("digits_in_large_text at "+at);
+    if(p.value==="speed"){hasSpeed=true;largestSpeed=Math.max(largestSpeed,Number(p.size)||0)}
+    if(p.value==="gear"){hasGear=true;if(Number(p.size)<22)add("text_too_small:gear at "+at)}
+    if(p.value==="speed"&&Number(p.size)<120)add("text_too_small:speed at "+at);
+    if(p.value==="gear")hasGear=true;
+    if(p.value==="odometer_shown"||p.value==="trip_a_km"||p.value==="trip_b_km"){}
+   }
+   if(p.type==="gears"){hasGear=true;if(Number(p.size||26)<22)add("text_too_small:gears at "+at)}
+   if(p.type==="signal"){if(p.side==="left")hasLeft=true;else if(p.side==="right")hasRight=true;else add("unknown_value:signal.side at "+at);if(Number(p.size||0)<22)add("text_too_small:signal at "+at)}
+   if(p.type==="path"&&typeof p.d==="string")pathChars+=p.d.length;
+   if(p.type==="repeat"){const n=Number(p.count);if(!Number.isInteger(n)||n<1||n>360)add("out_of_range:repeat.count at "+at);else expanded+=n;if(p.part)walk([p.part],at+".part",depth+1)}
+   if(p.type==="group"&&Array.isArray(p.parts)){expanded+=p.parts.length;walk(p.parts,at+".parts",depth+1)}
+   if(p.type==="scale"){
+    if(!["arc","line","path"].includes(p.shape))add("unknown_value:scale.shape at "+at);
+    if(!Array.isArray(p.range)||p.range.length<2)add("missing_field:scale.range at "+at);
+    if(!Number.isFinite(Number(p.major))||Number(p.major)<=0)add("missing_field:scale.major at "+at);
+    if(p.numbers&&Number(p.numbers.size)<22)add("text_too_small:scale.numbers at "+at);
+   }
+   if(p.type==="ring"&&(!Array.isArray(p.from)||p.from.length!==2||Number(p.from[1])<=Number(p.from[0])))add("bad_range:ring.from at "+at);
+   if(p.type==="arc"&&(!Number.isFinite(Number(p.radius))||Number(p.radius)<=0))add("not_number:arc.radius at "+at);
+   if(p.type==="line"&&(!Array.isArray(p.from)||!Array.isArray(p.to)||!p.stroke))add("missing_field:line.from/to/stroke at "+at);
+   if(p.stroke&&p.stroke.paint!==undefined&&!paintOk(p.stroke.paint))add("bad_paint:stroke.paint at "+at);
+   for(const k of ["x","y","width","height","radius","size","opacity","rotate","scale","scale_x","scale_y"])if(typeof p[k]==="number"&&(!Number.isFinite(p[k])||Math.abs(p[k])>4000))add("out_of_range:"+k+" at "+at);
+   if(p.type==="text"&&typeof p.x==="number"&&typeof p.y==="number"){const w=p.value==="speed"?(Number(p.size)||0)*1.9:(p.value==="gear"?(Number(p.size)||0)*.8:(Number(p.max_width)||Number(p.size)||12));const h=Number(p.size)||12;if(p.value!=="speed")largestNumber=Math.max(largestNumber,Number(p.size)||0);if(p.value==="speed"&&w>0&&p.x-w/2<0)add("off_canvas:speed at "+at)}
+   if(p.type==="scene"&&i===0){}
+  }
+ };
+ walk(ps,"$.parts");
+ if(sceneCount>1)add("scene_not_first: yalnız bir scene olabilir.");
+ if(sceneCount&&d.yoldas_dial!==3)add("missing_field:yoldas_dial — scene kullanırken 3 olmalı.");
+ if(!sceneCount&&(ps.some(p=>p?.type==="text"&&["trip_a_km","trip_b_km","odometer_shown"].includes(p.value)))&&d.yoldas_dial!==4)add("missing_field:yoldas_dial — Trip A/B veya odometer_shown kullanırken 4 olmalı.");
+ if(!hasSpeed){const needle=ps.some(p=>p?.type==="group"&&p.rotate?.value==="speed")||ps.some(p=>p?.reveal?.value==="speed");const scale=ps.some(p=>p?.type==="scale"&&p.numbers&&Number(p.numbers.size)>=22&&(p.shape==="arc"?(Number(p.radius)>=120):(p.shape==="line"?Math.hypot((p.to||[0,0])[0]-(p.from||[0,0])[0],(p.to||[0,0])[1]-(p.from||[0,0])[1])>=240:true)));if(!(needle&&scale))add("missing_speed: en az 120 px hız yazısı veya hız bağlı ibre/bant ve scale gerekli.");}
+ if(!hasGear)add("missing_gear: gears veya gear yazısı yok.");
+ if(!hasLeft)add("missing_signal_left: sol sinyal oku yok.");
+ if(!hasRight)add("missing_signal_right: sağ sinyal oku yok.");
+ if(largestSpeed&&largestNumber>largestSpeed)add("speed_not_largest: hız diğer sayılardan büyük olmalı.");
+ if(glow>12)add("budget_glow: en çok 12 glow.");
+ if(motion>40)add("budget_motion: en çok 40 motion.");
+ if(windows>6)add("budget_window: en çok 6 pencere.");
+ if(maskBlend>8)add("budget_mask_blend: maske, yarı saydam grup ve blend toplamı en çok 8.");
+ if(pathChars>4000)add("budget_path: yol komutları toplamı 4000 karakter sınırını aşıyor.");
+ if(expanded+ps.length>1500)add("budget_expanded: kopyalar ve ölçeklerle toplam parça 1500 sınırını aşıyor.");
+ try{if(new Blob([JSON.stringify(d)]).size>256*1024)add("budget_file: dosya 256 KB sınırını aşıyor.");}catch{}
+ return [...new Set(e)];
+}
 function repair(d){const x=structuredClone(d);x.yoldas_dial=1;x.name=String(x.name||"Yeni Kadran").slice(0,40);x.description=String(x.description||"").slice(0,200);x.background=x.background&&typeof x.background==="object"?{night:x.background.night||"#05070B",day:x.background.day||"#EEF1F4"}:{night:"#05070B",day:"#EEF1F4"};if(!Array.isArray(x.parts))x.parts=[];x.parts=x.parts.filter(p=>p&&typeof p==="object"&&TYPES.has(p.type)).slice(0,400);if(!x.parts.some(p=>p.type==="text"&&p.value==="speed"))x.parts.push({type:"text",value:"speed",x:960,y:340,align:"center",size:190,fill:"#F4F7FA"});if(!x.parts.some(p=>p.type==="gears"||p.type==="text"&&p.value==="gear"))x.parts.push({type:"gears",x:860,y:550,width:200,size:26,color:"#AAB6C2",active_color:"#20C9FF"});for(const side of ["left","right"])if(!x.parts.some(p=>p.type==="signal"&&p.side===side))x.parts.push({type:"signal",side,x:side==="left"?620:1244,y:245,size:56});for(const p of x.parts){if(p.type==="text"&&p.value==="speed")p.size=Math.max(120,Number(p.size)||190);if(p.type==="text"&&Number(p.size)<12)p.size=12;if(p.type==="gears")p.size=Math.max(22,Number(p.size)||26);}return x}
 function showReport(){if(!parse())return;const e=validate(doc);$("errors").textContent=e.length?e.map((v,i)=>(i+1)+". "+v).join("\n"):"✓ Hata bulunamadı. Temel Yoldaş şema denetimi başarılı."; $("errors").className="report"+(e.length?"":" good");setStatus(e.length?e.length+" sorun bulundu.":"Denetim başarılı.",!e.length)}
 $("json").addEventListener("input",()=>{clearTimeout(renderTimer);renderTimer=setTimeout(()=>{if(parse())$("extraStatus").textContent="JSON değişti; önizleme yenilendi."},300)});
