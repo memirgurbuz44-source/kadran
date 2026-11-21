@@ -33,7 +33,7 @@ main{max-width:1600px;margin:auto;padding:22px 3%}.intro{display:flex;justify-co
  <img id="aiRefPreview" class="photo-preview" hidden alt="AI referans görseli">
  <label class="field">AI ile konuşur gibi tarif et<textarea id="aiPrompt" class="ai-prompt" placeholder="Örneğin: Bana modern bir elektrikli otomobil kadranı tasarla. Ortada büyük hız, solda batarya, sağda menzil olsun. Buz mavisi ışıklar ve temiz bir görünüm kullan."></textarea></label>
  <p class="hint">Hazır fikirlerden birini seçebilir veya kendi tarifini yazabilirsin:</p><div class="row ai-ideas"><button type="button" data-ai-idea="Modern elektrikli otomobil tarzında; buz mavisi ışıklar, ortada büyük hız göstergesi, solda batarya ve sağda menzil.">Elektrikli</button><button type="button" data-ai-idea="Kırmızı detaylı, sportif ve agresif görünümlü dijital otomobil kadranı. Büyük hız göstergesi ve belirgin devir alanı olsun.">Sportif</button><button type="button" data-ai-idea="Sade, premium ve minimal bir kadran. Az çizgi, okunaklı rakamlar, yumuşak beyaz ve gümüş tonları.">Minimal</button><button type="button" data-ai-idea="Retro-fütüristik kadran; analog gösterge hissi, amber ışıklar ve modern dijital bilgiler.">Retro</button></div>
- <div class="row"><button id="aiGenerate" class="primary">✳ TASARIMI OLUŞTUR</button><button type="button" id="randomDial">🎲 RASTGELE KADRAN</button><span id="aiStatus" class="status" aria-live="polite">Hazırım. Fotoğraf olmadan da tasarım yapabilirim.</span></div>
+ <div class="row"><button id="aiGenerate" class="primary">✳ TASARIMI OLUŞTUR</button><button type="button" id="randomDial">🎲 RASTGELE KADRAN</button><span class="hint">100.000 farklı varyant kombinasyonu</span><span id="aiStatus" class="status" aria-live="polite">Hazırım. Fotoğraf olmadan da tasarım yapabilirim.</span></div>
 </div>
 <div class="panel"><h2>01 / Kadran dosyası</h2><div class="row"><button id="sample">Örnek yükle</button><button id="import">Dosya aç</button><input class="file" id="file" type="file" accept=".json,application/json"><button id="format">Biçimlendir</button><button id="copy">JSON kopyala</button></div><textarea id="json" class="editor" spellcheck="false" aria-label="Yoldaş kadran JSON"></textarea><div class="status" id="status">JSON hazırlanıyor…</div><div class="row"><button id="validate" class="primary">✓ Hataları denetle</button><button id="repair">↻ Güvenli düzeltmeler</button><button id="copyErrors">Hataları yapay zekâya kopyala</button></div><div id="errors" class="report">Henüz denetim yapılmadı.</div><p class="hint">Not: Bu, Yoldaş kitindeki şema ve temel yerleşim kurallarını kontrol eden bağımsız bir editördür. Yoldaş'ın kapalı/araç içi gerçek zamanlı motorunun birebir kopyası değildir.</p></div>
 <div class="panel"><h2>02 / Görünümü dene</h2><p class="help">Gece ve gündüz renklerini değiştir. Eco veya Spor gibi örnek kipleri seçerek önizlemeyi incele. Bunlar gerçek araç verisi değildir.</p><h3>Görünüm</h3><div class="modebar"><button data-theme="night" class="active">Gece</button><button data-theme="day">Gündüz</button></div><h3>Sürüş kipi</h3><div class="modebar"><button data-mode="eco">Eco</button><button data-mode="normal" class="active">Normal</button><button data-mode="sport">Spor</button><button data-mode="snow">Kar</button></div><h3>Araç durumu</h3><div class="modebar"><button data-state="fake" class="active">Sahte sürüş</button><button data-state="park">Park</button><button data-state="fixed">Sabit</button></div><h3>Önizleme seçenekleri</h3><div class="row"><label class="pill"><input id="warnings" type="checkbox" checked> Uyarı lambalarını göster</label><label class="pill"><input id="windows" type="checkbox" checked> Pencerelerde örnek görüntü</label></div><label class="field">Fotoğraf penceresi için örnek fotoğraf<input id="photo" type="file" accept="image/*"></label><img id="photoPreview" class="photo-preview" hidden alt="Seçilen fotoğraf önizlemesi"><p class="hint">Simülasyon değerleri örnektir; gerçek araç verisi okunmaz. Seçtiğin fotoğraf yalnızca bu tarayıcı önizlemesinde gösterilir ve JSON dosyasına eklenmez.</p></div>
@@ -246,45 +246,61 @@ function aiMakeDial(c,userPrompt=""){
  const layout=layouts.includes(c.layout)?c.layout:layouts[seed%layouts.length];
  const style=["neon","solid","minimal"].includes(c.gaugeStyle)?c.gaugeStyle:"neon";
  const title=String(c.name||p.name).replace(/[\\r\\n]+/g," ").slice(0,40);
- const glow=style==="neon"?{color:accent,size:13,strength:.45}:undefined;
+ const variant=Math.abs(Math.floor(Number(c.variant)||seed))%100000;
+ let state=(variant+1)>>>0;const rnd=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
+ const pick=(min,max)=>min+rnd()*(max-min);
+ const shiftX=Math.round(pick(-85,85)),shiftY=Math.round(pick(-35,35));
+ const mainRadius=Math.round(pick(245,310)),ringRadius=Math.round(pick(88,126));
+ const arcStart=Math.round(pick(-245,-185)),arcSweep=Math.round(pick(220,295));
+ const speedSize=Math.round(pick(165,225)),titleY=Math.round(pick(48,100));
+ const gearY=Math.round(pick(585,660)),accentWidth=Math.round(pick(4,12));
+ const glow=style==="neon"?{color:accent,size:Math.round(pick(7,18)),strength:.45}:undefined;
  const parts=[{type:"rect",x:0,y:0,width:1920,height:720,fill:bg},
-  {type:"text",text:title,x:960,y:65,align:"center",size:24,weight:800,spacing:.15,fill:muted},
-  {type:"text",value:"speed",x:960,y:365,align:"center",size:style==="minimal"?190:210,weight:700,font:"tech",fill:white},
-  {type:"text",text:"KM/H",x:960,y:420,align:"center",size:20,weight:700,fill:accent},
-  {type:"gears",x:960,y:625,width:210,size:29,color:muted,active_color:accent},
-  {type:"signal",side:"left",x:690,y:145,size:44},{type:"signal",side:"right",x:1230,y:145,size:44}];
+  {type:"text",text:title,x:960+shiftX,y:titleY,align:"center",size:24,weight:800,spacing:.15,fill:muted},
+  {type:"text",value:"speed",x:960+shiftX,y:365+shiftY,align:"center",size:Math.min(speedSize,style==="minimal"?195:225),weight:700,font:"tech",fill:white},
+  {type:"text",text:"KM/H",x:960+shiftX,y:420+shiftY,align:"center",size:20,weight:700,fill:accent},
+  {type:"gears",x:960+shiftX,y:gearY,width:210,size:29,color:muted,active_color:accent},
+  {type:"signal",side:"left",x:690+shiftX,y:145+shiftY,size:44},{type:"signal",side:"right",x:1230-shiftX,y:145+shiftY,size:44}];
  if(layout==="dual-dial"){
-  parts.push({type:"arc",center:[960,355],radius:285,start:-220,sweep:260,stroke:{paint:track,width:style==="solid"?26:18,cap:"round"}},
-   {type:"arc",center:[960,355],radius:285,start:-220,sweep:220,stroke:{paint:accent,width:style==="solid"?10:6,cap:"round"},glow},
-   {type:"ring",center:[410,355],radius:112,width:15,value:"battery",from:[0,100],color:secondary,track},
-   {type:"text",value:"battery",x:410,y:365,align:"center",size:48,fill:white},
-   {type:"text",text:"BATARYA",x:410,y:505,align:"center",size:18,fill:muted},
-   {type:"ring",center:[1510,355],radius:112,width:15,value:"range",from:[0,600],color:secondary,track},
-   {type:"text",value:"range",x:1510,y:365,align:"center",size:48,fill:white},
-   {type:"text",text:"MENZİL",x:1510,y:505,align:"center",size:18,fill:muted});
+  parts.push({type:"arc",center:[960,355],radius:mainRadius,start:arcStart,sweep:arcSweep,stroke:{paint:track,width:style==="solid"?26:18,cap:"round"}},
+   {type:"arc",center:[960,355],radius:mainRadius,start:arcStart,sweep:Math.max(160,arcSweep-25),stroke:{paint:accent,width:style==="solid"?10:6,cap:"round"},glow},
+   {type:"ring",center:[410+shiftX,355+shiftY],radius:ringRadius,width:15,value:"battery",from:[0,100],color:secondary,track},
+   {type:"text",value:"battery",x:410+shiftX,y:365+shiftY,align:"center",size:48,fill:white},
+   {type:"text",text:"BATARYA",x:410+shiftX,y:505+shiftY,align:"center",size:18,fill:muted},
+   {type:"ring",center:[1510+shiftX,355+shiftY],radius:ringRadius,width:15,value:"range",from:[0,600],color:secondary,track},
+   {type:"text",value:"range",x:1510+shiftX,y:365+shiftY,align:"center",size:48,fill:white},
+   {type:"text",text:"MENZİL",x:1510+shiftX,y:505+shiftY,align:"center",size:18,fill:muted});
  }else if(layout==="single-dial"){
-  parts.push({type:"circle",center:[960,355],radius:300,fill:"none",stroke:{paint:track,width:3}},
-   {type:"arc",center:[960,355],radius:275,start:-225,sweep:270,stroke:{paint:accent,width:style==="solid"?16:8,cap:"round"},glow},
-   {type:"scale",shape:"arc",center:[960,355],radius:250,start:-225,sweep:270,range:[0,maxSpeed],major:50,minor:10,width:3,color:white,numbers:{size:22,offset:38,color:muted}},
+  parts.push({type:"circle",center:[960,355],radius:mainRadius+15,fill:"none",stroke:{paint:track,width:3}},
+   {type:"arc",center:[960,355],radius:mainRadius,start:arcStart,sweep:arcSweep,stroke:{paint:accent,width:style==="solid"?16:8,cap:"round"},glow},
+   {type:"scale",shape:"arc",center:[960+shiftX,355+shiftY],radius:mainRadius-25,start:arcStart,sweep:arcSweep,range:[0,maxSpeed],major:50,minor:10,width:3,color:white,numbers:{size:22,offset:38,color:muted}},
    {type:"text",value:"battery",x:760,y:555,align:"center",size:30,fill:secondary},
    {type:"text",value:"range",x:1160,y:555,align:"center",size:30,fill:secondary});
  }else if(layout==="horizontal"){
   parts.push({type:"rect",x:190,y:190,width:1540,height:350,radius:28,fill:"#FFFFFF08",stroke:{paint:track,width:2}},
    {type:"bar",x:350,y:485,width:1220,height:13,value:"speed",from:[0,maxSpeed],color:accent,track},
-   {type:"ring",center:[390,340],radius:86,width:12,value:"battery",from:[0,100],color:secondary,track},
-   {type:"text",value:"battery",x:390,y:350,align:"center",size:38,fill:white},
-   {type:"text",value:"range",x:1530,y:350,align:"center",size:40,fill:white},
-   {type:"text",text:"BATARYA",x:390,y:465,align:"center",size:16,fill:muted},
-   {type:"text",text:"MENZİL",x:1530,y:465,align:"center",size:16,fill:muted});
+   {type:"ring",center:[390+shiftX,340+shiftY],radius:Math.round(ringRadius*.78),width:12,value:"battery",from:[0,100],color:secondary,track},
+   {type:"text",value:"battery",x:390+shiftX,y:350+shiftY,align:"center",size:38,fill:white},
+   {type:"text",value:"range",x:1530-shiftX,y:350+shiftY,align:"center",size:40,fill:white},
+   {type:"text",text:"BATARYA",x:390+shiftX,y:465+shiftY,align:"center",size:16,fill:muted},
+   {type:"text",text:"MENZİL",x:1530-shiftX,y:465+shiftY,align:"center",size:16,fill:muted});
  }else{
   parts.push({type:"line",from:[960,185],to:[960,515],stroke:{paint:track,width:2}},
    {type:"text",value:"time",x:960,y:190,align:"center",size:24,fill:muted},
    {type:"text",value:"battery",x:500,y:535,align:"center",size:34,fill:secondary},
    {type:"text",value:"range",x:1420,y:535,align:"center",size:34,fill:secondary},
-   {type:"arc",center:[960,355],radius:245,start:-205,sweep:230,stroke:{paint:accent,width:4,cap:"round"},glow});
+   {type:"arc",center:[960,355],radius:mainRadius-35,start:arcStart,sweep:arcSweep,stroke:{paint:accent,width:4,cap:"round"},glow});
  }
+ const ornamentCount=2+Math.floor(rnd()*5);
+ for(let i=0;i<ornamentCount;i++){
+  const x=Math.round(pick(90,1830)),y=Math.round(pick(115,610)),len=Math.round(pick(18,95));
+  if(i%3===0)parts.push({type:"line",from:[x,y],to:[Math.min(1870,x+len),y],stroke:{paint:track,width:Math.round(pick(1,4))}});
+  else if(i%3===1)parts.push({type:"circle",center:[x,y],radius:Math.round(pick(2,8)),fill:accent});
+  else parts.push({type:"arc",center:[x,y],radius:Math.round(pick(12,38)),start:Math.round(pick(-180,0)),sweep:Math.round(pick(45,150)),stroke:{paint:secondary,width:Math.round(pick(2,5))}});
+ }
+ parts.push({type:"text",text:"ID "+String(variant).padStart(5,"0"),x:1800,y:685,align:"right",size:12,fill:muted});
  if(race){parts.push({type:"text",text:"TRACK MODE",x:960,y:105,align:"center",size:17,fill:accent},{type:"text",text:"MAX "+maxSpeed+" KM/H",x:960,y:485,align:"center",size:18,fill:muted});}
- return {yoldas_dial:1,name:title,description:"AI tarafından oluşturulan "+layout+" yerleşimli "+style+" kadran.",background:{night:bg,day:"#EEF1F4"},parts};
+ return {yoldas_dial:1,name:title,description:"Rastgele varyant #"+variant+" · "+layout+" yerleşimli "+style+" kadran.",background:{night:bg,day:"#EEF1F4"},parts};
 }
 function aiToDesign(result,prompt=""){
  const design=result&&typeof result==="object"&&Array.isArray(result.parts)?structuredClone(result):aiMakeDial(result||{},prompt);
@@ -377,13 +393,15 @@ $("randomDial").onclick=()=>{
  const layouts=["dual-dial","single-dial","horizontal","minimal"];
  const styles=["neon","solid","minimal"];
  const palettes=[{accent:"#20C9FF",secondary:"#8B5CF6",name:"ICE VECTOR"},{accent:"#FF3B45",secondary:"#FFB12B",name:"REDLINE"},{accent:"#A855F7",secondary:"#EC4899",name:"VIOLET"},{accent:"#32D583",secondary:"#A3E635",name:"ECO PULSE"},{accent:"#FACC15",secondary:"#FB923C",name:"GOLD RUSH"},{accent:"#E6EDF5",secondary:"#7890A8",name:"MONOCHROME"}];
+ const variant=Math.floor(Math.random()*100000);
  const layout=layouts[Math.floor(Math.random()*layouts.length)],style=styles[Math.floor(Math.random()*styles.length)],palette=palettes[Math.floor(Math.random()*palettes.length)];
- const cfg={name:palette.name+" "+layout.toUpperCase(),layout,gaugeStyle:style,accent:palette.accent,secondary:palette.secondary,maxSpeed:layout==="single-dial"?320:240};
- doc=aiToDesign(aiMakeDial(cfg,"rastgele "+palette.name+" "+layout), "rastgele kadran");
+ const cfg={name:palette.name+" "+layout.toUpperCase()+" #"+String(variant).padStart(5,"0"),layout,gaugeStyle:style,accent:palette.accent,secondary:palette.secondary,maxSpeed:[180,200,220,240,260,280,300,320,350,380,400][Math.floor(Math.random()*11)],variant};
+ doc=aiToDesign(aiMakeDial(cfg,"rastgele varyant "+variant), "rastgele kadran");
  $("json").value=JSON.stringify(doc,null,2);render();showReport();
- $("aiPrompt").value="Rastgele oluşturulan "+layout+" yerleşimli "+style+" tarzı kadran. "+palette.name+" renkleri.";
- $("aiStatus").textContent="✓ Rastgele kadran oluşturuldu · "+layout+" / "+style+" / "+palette.name;
+ $("aiPrompt").value="Rastgele kadran #"+variant+" · "+layout+" / "+style+" / "+palette.name;
+ $("aiStatus").textContent="✓ Rastgele kadran #"+variant+" oluşturuldu · 100.000 varyant havuzundan";
  $("aiStatus").style.color="var(--green)";
+ $("extraStatus").textContent="Yeni rastgele tasarım üretildi. Her tasarım farklı geometri, gösterge ve dekorasyon kombinasyonları kullanır.";
  localStorage.setItem("kadran_atolye_json",JSON.stringify(doc));localStorage.setItem("kadran_atolye_name",doc.name);
 };
 $("aiGenerate").onclick=async()=>{
