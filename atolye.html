@@ -16,7 +16,7 @@ main{max-width:1600px;margin:auto;padding:22px 3%}.intro{display:flex;justify-co
 .preview{background:#050a11;border:1px solid #2a3c50;border-radius:9px;overflow:hidden;position:relative}.preview svg{display:block;width:100%;height:auto;aspect-ratio:1920/720}.status{font:11px monospace;color:var(--muted);padding:8px 0;white-space:pre-wrap}.report{background:#080f18;border:1px solid var(--line);border-radius:8px;padding:11px;min-height:65px;white-space:pre-wrap;color:#ffb9b9;font:11px/1.55 Consolas,monospace}.report.good{color:var(--green)}
 .hint{font-size:11px;color:#8193a8;line-height:1.6}.toolbar{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:8px 0}.modebar{display:flex;gap:6px;flex-wrap:wrap}.file{display:none}
 .part-chip{cursor:pointer}.part-chip:hover{filter:brightness(1.3)}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.field{display:flex;flex-direction:column;gap:5px;color:#aebed0;font-size:11px}.field input,.field select{width:100%;background:#08111c;border:1px solid #31445b;color:#edf4ff;border-radius:6px;padding:8px;min-width:0}.pill{border:1px solid #354b62;border-radius:999px;padding:7px 10px;font-size:10px;color:#a9bfd4}
-.photo-preview{width:100%;max-height:160px;object-fit:contain;background:#070d15;border-radius:8px;margin-top:8px}\n.ai-inline-panel{border-color:#24506a;background:linear-gradient(145deg,#14283a,#0d1724)}.ai-inline-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.ai-inline-head h2{margin:6px 0 12px}.ai-prompt{width:100%;min-height:92px;resize:vertical;background:#08111c;border:1px solid #31445b;color:#edf4ff;border-radius:6px;padding:10px;font:12px/1.5 Arial,sans-serif}.ai-prompt:focus{outline:none;border-color:var(--cyan)}#aiGenerate{min-width:170px}#aiStatus{flex:1;min-width:150px;white-space:pre-wrap}.warn{color:var(--amber)}footer{padding:20px 0;color:#64758a;font-size:10px;letter-spacing:1.5px}
+.photo-preview{width:100%;max-height:160px;object-fit:contain;background:#070d15;border-radius:8px;margin-top:8px}\n.ai-inline-panel{border-color:#24506a;background:linear-gradient(145deg,#14283a,#0d1724)}.ai-inline-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.ai-inline-head h2{margin:6px 0 12px}.ai-prompt{width:100%;min-height:92px;resize:vertical;background:#08111c;border:1px solid #31445b;color:#edf4ff;border-radius:6px;padding:10px;font:12px/1.5 Arial,sans-serif}.ai-prompt:focus{outline:none;border-color:var(--cyan)}.ai-ideas{margin:7px 0 12px}.ai-ideas button{font-size:10px;padding:7px 10px;background:#101f2e;color:#b9d5e8}.ai-ideas button:hover{background:#17354b;color:#fff}#aiGenerate{min-width:170px}#aiStatus{flex:1;min-width:150px;white-space:pre-wrap}.warn{color:var(--amber)}footer{padding:20px 0;color:#64758a;font-size:10px;letter-spacing:1.5px}
 @media(max-width:950px){.layout{grid-template-columns:1fr}.editor{height:320px}header{position:static}.intro{display:block}h1{font-size:25px}}
 </style>
 </head>
@@ -27,11 +27,13 @@ main{max-width:1600px;margin:auto;padding:22px 3%}.intro{display:flex;justify-co
 <div class="layout">
 <section>
 <div class="panel ai-inline-panel">
- <div class="ai-inline-head"><div><div class="eyebrow">AI STUDIO · AYNI EKRANDA</div><h2>✳ Yapay zekâ ile kadran oluştur</h2></div><span class="pill">AI → JSON → ATÖLYE</span></div>
- <label class="field">Referans görsel (isteğe bağlı)<input id="aiRefInput" type="file" accept="image/png,image/jpeg,image/webp"></label>
+ <div class="ai-inline-head"><div><div class="eyebrow">AI STUDIO · TASARIM ASİSTANI</div><h2>✳ Nasıl bir kadran hayal ediyorsun?</h2></div><span class="pill">AI → JSON → ATÖLYE</span></div>
+ <p class="hint" style="margin:0 0 12px">Fotoğraf şart değil. Sadece tarif et; AI isteğini anlayıp tasarımı oluştursun. İstersen örnek görsel de ekleyebilirsin.</p>
+ <label class="field">Referans görsel <span class="hint">(isteğe bağlı)</span><input id="aiRefInput" type="file" accept="image/png,image/jpeg,image/webp"></label>
  <img id="aiRefPreview" class="photo-preview" hidden alt="AI referans görseli">
- <label class="field">Nasıl bir kadran tasarlayayım?<textarea id="aiPrompt" class="ai-prompt" placeholder="Örn. Kırmızı neon detaylı, yarış otomobili tarzında; ortada büyük hız göstergesi, sağda devir göstergesi..."></textarea></label>
- <div class="row"><button id="aiGenerate" class="primary">✳ TASARIMI OLUŞTUR</button><span id="aiStatus" class="status">Görsel yüklemek isteğe bağlı. İsteğini yazıp başlat.</span></div>
+ <label class="field">AI ile konuşur gibi tarif et<textarea id="aiPrompt" class="ai-prompt" placeholder="Örneğin: Bana modern bir elektrikli otomobil kadranı tasarla. Ortada büyük hız, solda batarya, sağda menzil olsun. Buz mavisi ışıklar ve temiz bir görünüm kullan."></textarea></label>
+ <div class="row ai-ideas"><button type="button" data-ai-idea="Modern elektrikli otomobil tarzında; buz mavisi ışıklar, ortada büyük hız göstergesi, solda batarya ve sağda menzil.">Elektrikli</button><button type="button" data-ai-idea="Kırmızı detaylı, sportif ve agresif görünümlü dijital otomobil kadranı. Büyük hız göstergesi ve belirgin devir alanı olsun.">Sportif</button><button type="button" data-ai-idea="Sade, premium ve minimal bir kadran. Az çizgi, okunaklı rakamlar, yumuşak beyaz ve gümüş tonları.">Minimal</button><button type="button" data-ai-idea="Retro-fütüristik kadran; analog gösterge hissi, amber ışıklar ve modern dijital bilgiler.">Retro</button></div>
+ <div class="row"><button id="aiGenerate" class="primary">✳ TASARIMI OLUŞTUR</button><span id="aiStatus" class="status" aria-live="polite">Hazırım. Fotoğraf olmadan da tasarım yapabilirim.</span></div>
 </div>
 <div class="panel"><h2>01 / Kadran dosyası</h2><div class="row"><button id="sample">Örnek yükle</button><button id="import">Dosya aç</button><input class="file" id="file" type="file" accept=".json,application/json"><button id="format">Biçimlendir</button><button id="copy">JSON kopyala</button></div><textarea id="json" class="editor" spellcheck="false" aria-label="Yoldaş kadran JSON"></textarea><div class="status" id="status">JSON hazırlanıyor…</div><div class="row"><button id="validate" class="primary">✓ Hataları denetle</button><button id="repair">↻ Güvenli düzeltmeler</button><button id="copyErrors">Hataları yapay zekâya kopyala</button></div><div id="errors" class="report">Henüz denetim yapılmadı.</div><p class="hint">Not: Bu, Yoldaş kitindeki şema ve temel yerleşim kurallarını kontrol eden bağımsız bir editördür. Yoldaş'ın kapalı/araç içi gerçek zamanlı motorunun birebir kopyası değildir.</p></div>
 <div class="panel"><h2>02 / Görünüm ve sürüş simülasyonu</h2><h3>Görünüm</h3><div class="modebar"><button data-theme="night" class="active">Gece</button><button data-theme="day">Gündüz</button></div><h3>Sürüş kipi</h3><div class="modebar"><button data-mode="eco">Eco</button><button data-mode="normal" class="active">Normal</button><button data-mode="sport">Spor</button><button data-mode="snow">Kar</button></div><h3>Araç durumu</h3><div class="modebar"><button data-state="fake" class="active">Sahte sürüş</button><button data-state="park">Park</button><button data-state="fixed">Sabit</button></div><h3>Önizleme seçenekleri</h3><div class="row"><label class="pill"><input id="warnings" type="checkbox" checked> Uyarı lambalarını göster</label><label class="pill"><input id="windows" type="checkbox" checked> Pencerelerde örnek görüntü</label></div><label class="field">Fotoğraf penceresi için örnek fotoğraf<input id="photo" type="file" accept="image/*"></label><img id="photoPreview" class="photo-preview" hidden alt="Seçilen fotoğraf önizlemesi"><p class="hint">Simülasyon değerleri örnektir; gerçek araç verisi okunmaz. Seçtiğin fotoğraf yalnızca bu tarayıcı önizlemesinde gösterilir ve JSON dosyasına eklenmez.</p></div>
@@ -268,6 +270,7 @@ async function runAtelierAIJob(){
 
 
 let aiReferenceData=null;
+document.querySelectorAll("[data-ai-idea]").forEach(b=>b.onclick=()=>{$("aiPrompt").value=b.dataset.aiIdea;$("aiPrompt").focus();$("aiStatus").textContent="Güzel fikir. İstersen tarifini değiştirip kendi detaylarını da ekleyebilirsin.";});
 $("aiRefInput").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  if(!/^image\/(png|jpeg|webp)$/.test(f.type)){setStatus("PNG, JPG veya WEBP görsel seç.");return}
@@ -279,12 +282,14 @@ $("aiRefInput").onchange=async e=>{
 };
 $("aiGenerate").onclick=async()=>{
  const prompt=$("aiPrompt").value.trim();
- if(!prompt){$("aiStatus").textContent="Önce nasıl bir kadran istediğini yaz.";return}
+ if(!prompt){$("aiStatus").textContent="Nasıl bir kadran istediğini birkaç kelimeyle anlatman yeterli.";return}
  const button=$("aiGenerate");button.disabled=true;button.textContent="AI TASARLIYOR…";
  try{
   const imageData=aiReferenceData||"data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="1280" height="720" fill="#101722"/><text x="640" y="360" text-anchor="middle" fill="#aab6c2" font-size="28">No reference image - design from text prompt</text></svg>');
   $("aiStatus").textContent="AI isteğini işliyor ve kadran ayarlarını oluşturuyor…";
-  let cfg=await aiAskAtelier(imageData,prompt),errors=[];
+  $("aiStatus").textContent=aiReferenceData?"Görseline ve tarifine bakıyorum; sana uygun bir kadran hazırlıyorum…":"Tarifini anladım. Fotoğraf olmadan, anlattıklarından özgün bir kadran hazırlıyorum…";
+  const designerPrompt="Sen deneyimli, doğal ve yardımsever bir otomotiv arayüz tasarımcısısın. Kullanıcıyla Türkçe, insan gibi ve anlaşılır iletişim kur. Kullanıcının tarifini dikkatle yorumla; fotoğraf verilmediyse bunu sorun etme, yalnızca metinden özgün bir tasarım oluştur. Eksik ayrıntılarda makul tasarım kararları ver; gereksiz soru sorma. Tasarım kullanıcının isteğine özgü olsun; her istekte aynı renk ve yerleşimi tekrarlama. Yalnızca aşağıdaki config alanlarını içeren geçerli JSON nesnesi döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. layout değerleri dual-dial/single-dial/horizontal/minimal; gaugeStyle neon/solid/minimal; renkler #RRGGBB. Kullanıcı başka dilde yazsa bile açıklama alanları dışında config anahtarları sabit kalsın.\nKULLANICININ İSTEĞİ: "+prompt;
+  let cfg=await aiAskAtelier(imageData,designerPrompt),errors=[];
   for(let round=0;round<=6;round++){
    doc=aiMakeDial(cfg);$("json").value=JSON.stringify(doc,null,2);render();errors=validate(doc);showReport();
    if(!errors.length)break;
@@ -297,7 +302,7 @@ $("aiGenerate").onclick=async()=>{
   if(errors.length)throw new Error("Düzeltme turlarından sonra kalan hatalar: "+errors.join(" · "));
   localStorage.setItem("kadran_atolye_json",JSON.stringify(doc));
   localStorage.setItem("kadran_atolye_name",doc.name||"AI Kadran");
-  $("aiStatus").textContent="✓ Tasarım hazır · Atölye denetimi hatasız · JSON ve önizleme güncellendi.";
+  $("aiStatus").textContent="✓ Tasarımını hazırladım. Atölye kontrolünden geçti; JSON ve canlı önizleme güncellendi.";
   $("aiStatus").style.color="var(--green)";
   $("extraStatus").textContent="AI tasarımı bu Atölye oturumuna yüklendi.";
  }catch(err){$("aiStatus").textContent="AI hatası: "+err.message;$("aiStatus").style.color="var(--red)"}
