@@ -43,6 +43,26 @@ main{max-width:1600px;margin:auto;padding:22px 3%}.intro{display:flex;justify-co
 <div class="panel"><div class="toolbar"><div><h2>04 / Canlı kadran önizlemesi</h2><span class="hint">Önizlemede desteklenen öğelere tıklayabilirsin.</span></div><span class="pill" id="stateLabel">SAHTE SÜRÜŞ</span></div><div class="preview"><svg id="preview" viewBox="0 0 1920 720" role="img" aria-label="Kadran önizlemesi"><rect width="1920" height="720" fill="#05070B"/></svg></div><div class="row"><span class="pill" id="modeLabel">NORMAL</span><span class="pill" id="themeLabel">GECE</span><span class="pill">ÖRNEK VERİ</span></div></div>
 <div class="panel"><h2>05 / Denetim ve dosya işlemleri</h2><div class="row"><button id="copyPrompt">Seçili öğe için AI talimatı kopyala</button><button id="downloadSvg">Önizlemeyi SVG indir</button><button id="resetView">Önizlemeyi sıfırla</button></div><div class="status" id="extraStatus">Dosyan hazır olduğunda JSON indir düğmesini kullan.</div></div>
 </section>
+
+<div class="panel" id="aiLibraryPanel">
+ <h2>06 / AI Tasarım Kütüphanesi</h2>
+ <p class="hint">Worker'daki katalog, rastgele tasarım, arama, öneri ve varyasyon servislerini doğrudan bu ekrandan kullan.</p>
+ <div class="row">
+  <button type="button" id="loadLibrary">10.000 tasarımı yükle</button>
+  <button type="button" id="randomLibrary">Rastgele tasarım</button>
+  <button type="button" id="batchLibrary">5 varyasyon üret</button>
+ </div>
+ <div class="row">
+  <input id="librarySearch" aria-label="Katalogda ara" placeholder="Katalogda ara: neon, retro, mavi..." style="flex:1;min-width:180px;background:#08111c;border:1px solid #31445b;color:#edf4ff;border-radius:6px;padding:9px">
+  <button type="button" id="searchLibrary">Ara</button>
+ </div>
+ <div class="row">
+  <input id="recommendPrompt" aria-label="Tasarım önerisi isteği" placeholder="Nasıl bir tasarım istiyorsun?" style="flex:1;min-width:180px;background:#08111c;border:1px solid #31445b;color:#edf4ff;border-radius:6px;padding:9px">
+  <button type="button" id="recommendLibrary">AI öner</button>
+ </div>
+ <div id="libraryStatus" class="status" aria-live="polite">Katalog henüz yüklenmedi.</div>
+ <div id="libraryResults" class="row" style="align-items:stretch"></div>
+</div>
 </div><footer>KADRAN AI STUDIO · YOLDAŞ KADRAN FORMATINA UYUMLU BAĞIMSIZ EDİTÖR</footer>
 </main>
 <script>
@@ -361,6 +381,65 @@ KULLANICININ İSTEĞİ: "+prompt;
  }catch(err){$("aiStatus").textContent="AI hatası: "+err.message;$("aiStatus").style.color="var(--red)"}
  finally{button.disabled=false;button.textContent="✳ TASARIMI OLUŞTUR"}
 };
+
+
+const KADRAN_API="https://kadran-ai.memirgurbuz44.workers.dev";
+function libraryStatus(message,good=false){const el=$("libraryStatus");if(el){el.textContent=message;el.style.color=good?"var(--green)":"var(--amber)";}}
+async function libraryRequest(path,options={}){
+ const response=await fetch(KADRAN_API+path,{...options,headers:{"Accept":"application/json",...(options.headers||{})}});
+ const raw=await response.text();let data;
+ try{data=JSON.parse(raw)}catch{throw new Error("Worker JSON döndürmedi (HTTP "+response.status+"): "+raw.slice(0,160))}
+ if(!response.ok||data.success===false)throw new Error(data.detail||data.error||("Worker HTTP "+response.status));
+ return data;
+}
+function libraryItems(data){
+ if(Array.isArray(data))return data;
+ for(const key of ["items","designs","library","results","presets","alternatives","variations"])if(Array.isArray(data?.[key]))return data[key];
+ const one=data?.design||data?.config||data?.item||data?.result;
+ return one?[one]:[];
+}
+function libraryDesign(item){
+ if(!item||typeof item!=="object")throw new Error("Tasarım kaydı geçersiz.");
+ const raw=item.design||item.config||item;
+ const design=aiToDesign(raw,String(item.name||item.title||"Katalog tasarımı"));
+ if(!design||!Array.isArray(design.parts))throw new Error("Bu kayıt Atölye tasarımına dönüştürülemedi.");
+ return design;
+}
+function showLibraryItems(items,label){
+ const host=$("libraryResults");host.innerHTML="";
+ if(!items.length){libraryStatus("Worker yanıt verdi ancak listelenecek tasarım bulamadı.");return;}
+ items.slice(0,30).forEach((item,index)=>{
+  const b=document.createElement("button");b.type="button";
+  b.textContent=String(item.name||item.title||item.id||("Tasarım "+(index+1))).slice(0,52);
+  b.title="Tasarımı canlı önizlemeye yükle";
+  b.onclick=()=>{
+   try{
+    doc=libraryDesign(item);$("json").value=JSON.stringify(doc,null,2);render();showReport();
+    localStorage.setItem("kadran_atolye_json",JSON.stringify(doc));
+    libraryStatus("✓ "+(doc.name||"Tasarım")+" Atölye'ye yüklendi.",true);
+   }catch(e){libraryStatus("Tasarım yüklenemedi: "+e.message);}
+  };
+  host.appendChild(b);
+ });
+ libraryStatus(label+" · "+items.length+" kayıt gösteriliyor. Bir tasarıma tıklayarak önizlemeye yükle.",true);
+}
+async function runLibraryAction(path,label){
+ libraryStatus(label+" yükleniyor…");
+ try{const data=await libraryRequest(path);const items=libraryItems(data);showLibraryItems(items,label);}
+ catch(e){libraryStatus(label+" başarısız: "+e.message);}
+}
+$("loadLibrary").onclick=()=>runLibraryAction("/library","Katalog");
+$("randomLibrary").onclick=()=>runLibraryAction("/random","Rastgele tasarım");
+$("searchLibrary").onclick=()=>{
+ const q=$("librarySearch").value.trim();if(!q){libraryStatus("Aramak için bir kelime yaz.");return;}
+ runLibraryAction("/search?q="+encodeURIComponent(q),"Arama");
+};
+$("librarySearch").addEventListener("keydown",e=>{if(e.key==="Enter")$("searchLibrary").click();});
+$("recommendLibrary").onclick=()=>{
+ const q=$("recommendPrompt").value.trim();if(!q){libraryStatus("Öneri almak için tasarım isteğini yaz.");return;}
+ runLibraryAction("/recommend?q="+encodeURIComponent(q),"AI önerisi");
+};
+$("batchLibrary").onclick=()=>runLibraryAction("/batch?count=5","5 tasarım varyasyonu");
 
 const incoming=localStorage.getItem("kadran_atolye_json");if(incoming){try{doc=JSON.parse(incoming)}catch{doc=structuredClone(sample)}}$("json").value=JSON.stringify(doc,null,2);render();showReport();
 </script>
