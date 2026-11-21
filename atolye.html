@@ -434,11 +434,17 @@ $("searchLibrary").onclick=()=>{
  runLibraryAction("/search?q="+encodeURIComponent(q),"Arama");
 };
 $("librarySearch").addEventListener("keydown",e=>{if(e.key==="Enter")$("searchLibrary").click();});
-$("recommendLibrary").onclick=()=>{
+$("recommendLibrary").onclick=async()=>{
  const q=$("recommendPrompt").value.trim();if(!q){libraryStatus("Öneri almak için tasarım isteğini yaz.");return;}
- runLibraryAction("/recommend?q="+encodeURIComponent(q),"AI önerisi");
+ const form=new FormData();form.append("prompt",q);libraryStatus("AI önerileri hazırlanıyor…");
+ try{const data=await libraryRequest("/recommend",{method:"POST",body:form});showLibraryItems(libraryItems(data),"AI önerisi");}
+ catch(e){libraryStatus("AI önerisi alınamadı: "+e.message);}
 };
-$("batchLibrary").onclick=()=>runLibraryAction("/batch?count=5","5 tasarım varyasyonu");
+$("batchLibrary").onclick=async()=>{
+ const form=new FormData();form.append("config",JSON.stringify({}));form.append("count","5");libraryStatus("5 farklı tasarım hazırlanıyor…");
+ try{const data=await libraryRequest("/batch",{method:"POST",body:form});showLibraryItems(libraryItems(data),"5 tasarım varyasyonu");}
+ catch(e){libraryStatus("Varyasyonlar hazırlanamadı: "+e.message);}
+};
 
 const incoming=localStorage.getItem("kadran_atolye_json");if(incoming){try{doc=JSON.parse(incoming)}catch{doc=structuredClone(sample)}}$("json").value=JSON.stringify(doc,null,2);render();showReport();
 </script>
