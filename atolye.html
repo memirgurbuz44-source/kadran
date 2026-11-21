@@ -238,7 +238,8 @@ function aiMakeDial(c,userPrompt=""){
   {re:/pembe|pink|rose/i,a:"#F472B6",b:"#A78BFA",name:"ROSE"},
   {re:/beyaz|white|gümüş|gumus|silver|minimal|sade/i,a:"#DCE6F2",b:"#7C9AB8",name:"PURE"}
  ];
- const palette=palettes.find(p=>p.re.test(prompt))||(race?palettes[0]:null);
+ let promptHash=2166136261;for(let i=0;i<prompt.length;i++)promptHash=Math.imul(promptHash^prompt.charCodeAt(i),16777619)>>>0;
+ const palette=palettes.find(p=>p.re.test(prompt))||palettes[promptHash%palettes.length];
  const accent=palette?palette.a:(typeof c.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.accent)?c.accent:"#20C9FF");
  const secondary=palette?palette.b:(typeof c.secondary==="string"&&/^#[0-9a-fA-F]{6}$/.test(c.secondary)?c.secondary:"#8B5CF6");
  const rawTitle=palette?(race?"GT "+palette.name+" // TRACK MODE":palette.name+" // DIGITAL COCKPIT"):(c.name||prompt.replace(/[\r\n]+/g," ").slice(0,34).toUpperCase()||"DIGITAL COCKPIT");
