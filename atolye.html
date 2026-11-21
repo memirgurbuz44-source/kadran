@@ -233,14 +233,21 @@ function aiMakeDial(c){
 }
 function aiSetStatus(message,isGood=false){$("extraStatus").textContent=message;$("extraStatus").style.color=isGood?"#42d6a0":"#ffbd58";}
 async function aiAskAtelier(imageData,prompt){
- const blob=await (await fetch(imageData)).blob(),form=new FormData();form.append("image",blob,"kadran-referans.jpg");form.append("prompt",prompt);
+ const imageResponse=await fetch(imageData);if(!imageResponse.ok)throw new Error("Referans görsel hazırlanamadı (HTTP "+imageResponse.status+").");
+ const blob=await imageResponse.blob(),form=new FormData();
+ const imageName=blob.type==="image/png"?"kadran-referans.png":blob.type==="image/webp"?"kadran-referans.webp":"kadran-referans.jpg";
+ form.append("image",blob,imageName);form.append("prompt",prompt);
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
  try{
   const response=await fetch("https://kadran-ai.memirgurbuz44.workers.dev",{method:"POST",body:form,signal:controller.signal});
   const raw=await response.text();let data;try{data=JSON.parse(raw)}catch{throw new Error("AI yanıtı geçerli JSON değil: "+raw.slice(0,180))}
   if(!response.ok||!data.success)throw new Error(data.detail||data.error||("AI HTTP "+response.status));
   if(!data.config||typeof data.config!=="object")throw new Error("AI config döndürmedi.");return data.config;
- }catch(e){if(e.name==="AbortError")throw new Error("AI 90 saniyede yanıt vermedi.");throw e}
+ }catch(e){
+  if(e.name==="AbortError")throw new Error("AI sunucusu 90 saniyede yanıt vermedi. Biraz sonra tekrar dene.");
+  if(e instanceof TypeError)throw new Error("AI sunucusuna bağlanılamadı. İnternet bağlantısını ve Worker adresini kontrol et. ("+e.message+")");
+  throw e
+ }
  finally{clearTimeout(timer)}
 }
 async function runAtelierAIJob(){
@@ -285,7 +292,9 @@ $("aiGenerate").onclick=async()=>{
  if(!prompt){$("aiStatus").textContent="Nasıl bir kadran istediğini birkaç kelimeyle anlatman yeterli.";return}
  const button=$("aiGenerate");button.disabled=true;button.textContent="AI TASARLIYOR…";
  try{
-  const imageData=aiReferenceData||"data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="1280" height="720" fill="#101722"/><text x="640" y="360" text-anchor="middle" fill="#aab6c2" font-size="28">No reference image - design from text prompt</text></svg>');
+  // Fotoğraf yoksa Worker'ın görsel alanı için geçerli, küçük bir PNG gönder.
+  // Tasarımın kaynağı yine kullanıcının metin tarifidir.
+  const imageData=aiReferenceData||"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lX8AAAAASUVORK5CYII=";
   $("aiStatus").textContent="AI isteğini işliyor ve kadran ayarlarını oluşturuyor…";
   $("aiStatus").textContent=aiReferenceData?"Görseline ve tarifine bakıyorum; sana uygun bir kadran hazırlıyorum…":"Tarifini anladım. Fotoğraf olmadan, anlattıklarından özgün bir kadran hazırlıyorum…";
   const designerPrompt="Sen deneyimli, doğal ve yardımsever bir otomotiv arayüz tasarımcısısın. Kullanıcıyla Türkçe, insan gibi ve anlaşılır iletişim kur. Kullanıcının tarifini dikkatle yorumla; fotoğraf verilmediyse bunu sorun etme, yalnızca metinden özgün bir tasarım oluştur. Eksik ayrıntılarda makul tasarım kararları ver; gereksiz soru sorma. Tasarım kullanıcının isteğine özgü olsun; her istekte aynı renk ve yerleşimi tekrarlama. Yalnızca aşağıdaki config alanlarını içeren geçerli JSON nesnesi döndür: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. layout değerleri dual-dial/single-dial/horizontal/minimal; gaugeStyle neon/solid/minimal; renkler #RRGGBB. Kullanıcı başka dilde yazsa bile açıklama alanları dışında config anahtarları sabit kalsın.\nKULLANICININ İSTEĞİ: "+prompt;
