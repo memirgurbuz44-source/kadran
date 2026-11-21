@@ -367,7 +367,7 @@ $("aiGenerate").onclick=async()=>{
   let errors=validate(doc);
   for(let round=1;errors.length&&round<=2;round++){
    $("aiStatus").textContent="Atölye "+errors.length+" sorun buldu · AI tasarımı düzeltiyor ("+round+"/2)…";
-   const repairPrompt="Aşağıdaki Yoldaş kadran JSON'unu, kullanıcının ilk isteğini ve mevcut görsel düzeni koruyarak düzelt. Sadece bildirilen şema hatalarını düzelt. Çıktı tam Yoldaş JSON'u olmalı; config değil. Yalnızca JSON döndür. Hatalar: "+errors.join(" | ")+"\nKullanıcının ilk isteği: "+prompt+"\nMevcut tam JSON: "+JSON.stringify(doc);
+    const repairPrompt="Sen otomobil gösterge paneli tasarım asistanısın. İlk isteği ve tasarım tarzını koru. Yalnızca geçerli JSON nesnesi döndür; Markdown veya açıklama ekleme. Çıktı Atölye yapılandırması (config) olmalı, parts dizili Yoldaş JSON olmamalı. Desteklenen alanlar: name,maxSpeed,maxRpm,theme,accent,secondary,speed,rpm,units,layout,gaugeStyle,centerText,subtitle. layout değerleri: dual-dial, single-dial, horizontal, minimal. gaugeStyle değerleri: neon, solid, minimal. Renkler #RRGGBB biçiminde olmalı. Kullanıcının isteği: "+prompt+"\nDoğrulama hataları: "+errors.join(" | ")+"\nMevcut tasarım yapılandırması: "+JSON.stringify(result)+"\nMevcut önizleme JSON özeti: "+JSON.stringify({name:doc.name,parts:doc.parts?.length});
    result=await aiAskAtelier(imageData,repairPrompt);
    doc=aiToDesign(result,prompt);$("json").value=JSON.stringify(doc,null,2);render();showReport();errors=validate(doc);
   }
